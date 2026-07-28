@@ -7,9 +7,10 @@ type Props = {
   total: number
   chars: number
   limit: number
+  showCount: boolean
 }
 
-export function PostCard({ text, index, total, chars, limit }: Props) {
+export function PostCard({ text, index, total, chars, limit, showCount }: Props) {
   const over = chars > limit
 
   return (
@@ -18,7 +19,7 @@ export function PostCard({ text, index, total, chars, limit }: Props) {
         <span className="card__index">
           {index + 1} <span className="card__of">of {total}</span>
         </span>
-        <CharMeter chars={chars} limit={limit} />
+        <CharMeter chars={chars} limit={limit} showCount={showCount} />
       </header>
       {/* Preserves the newlines the splitter chose, including the numbering separator. */}
       <p className="card__body">{text}</p>

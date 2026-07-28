@@ -61,6 +61,23 @@ body {
   font-size: 0.8125rem;
 }
 
+.toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle input {
+  accent-color: var(--accent);
+  margin: 0;
+  cursor: pointer;
+}
+
 /* ── Two panes ─────────────────────────────────────────────── */
 
 .compose {
@@ -200,6 +217,7 @@ body {
 .meter {
   display: flex;
   align-items: center;
+  gap: 0.375rem;
 }
 
 .meter__track {
@@ -220,11 +238,23 @@ body {
   stroke: var(--warn);
 }
 
+.meter--over .meter__fill {
+  stroke: var(--danger);
+}
+
 .meter__count {
-  color: var(--danger);
+  color: var(--muted);
   font-size: 0.8125rem;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.meter--close .meter__count {
+  color: var(--warn);
+}
+
+.meter--over .meter__count {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 /* ── Narrow screens ────────────────────────────────────────── */

@@ -11,6 +11,7 @@ Put --- on its own line to force a break exactly where you want one.`
 
 type Props = {
   profile: Profile
+  showCounts: boolean
 }
 
 /**
@@ -18,7 +19,7 @@ type Props = {
  * derived on every keystroke and never edited. Per-post editing — and the `detached`
  * flag that guards it — arrives with Arrange mode in Stage 3.
  */
-export function ComposeView({ profile }: Props) {
+export function ComposeView({ profile, showCounts }: Props) {
   const [source, setSource] = useState('')
 
   const count = useMemo(() => counterFor(profile.platform), [profile.platform])
@@ -83,6 +84,7 @@ export function ComposeView({ profile }: Props) {
                 total={rendered.length}
                 chars={post.chars}
                 limit={profile.charLimit}
+                showCount={showCounts}
               />
             ))
           )}
