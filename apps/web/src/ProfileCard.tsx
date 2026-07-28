@@ -52,6 +52,26 @@ export function ProfileCard({
   const setNumbering = (patch: Partial<Profile['numbering']>) =>
     onChange({ ...profile, numbering: { ...profile.numbering, ...patch } })
 
+  const setTemplate = (index: number, next: Profile['closingTemplates'][number]) =>
+    set({
+      closingTemplates: profile.closingTemplates.map((t, i) => (i === index ? next : t)),
+    })
+
+  const removeTemplate = (index: number) =>
+    set({ closingTemplates: profile.closingTemplates.filter((_, i) => i !== index) })
+
+  const addTemplate = () =>
+    set({
+      closingTemplates: [
+        ...profile.closingTemplates,
+        {
+          id: globalThis.crypto.randomUUID(),
+          label: 'New template',
+          body: 'If this was useful, repost the first post 🙏\n\n{{url}}',
+        },
+      ],
+    })
+
   const count = counterFor(profile.platform)
   const sample = applyNumbering(
     'The body of a post in the middle of the thread.',
@@ -219,6 +239,64 @@ export function ProfileCard({
             {profile.platform === 'x' && countX('🙏') === 2 && (
               <> Emoji in the format count as 2.</>
             )}
+          </p>
+        </section>
+
+        <section>
+          <h3>Ending</h3>
+          <div className="field">
+            <label htmlFor="p-marker">End marker</label>
+            <input
+              id="p-marker"
+              value={profile.numbering.endMarker}
+              onChange={(e) => setNumbering({ endMarker: e.target.value })}
+              placeholder="EOF"
+              spellCheck={false}
+            />
+          </div>
+          <p className="help__note">
+            Added to the last post — <code>12/12 EOF</code> — for threads that just stop.
+            Leave it empty for nothing. A thread with a closing post never shows it: a
+            closing post already is the ending.
+          </p>
+
+          <h3>Closing templates</h3>
+          {profile.closingTemplates.map((template, index) => (
+            <div className="template" key={template.id}>
+              <div className="field">
+                <label htmlFor={`t-label-${template.id}`}>Label</label>
+                <input
+                  id={`t-label-${template.id}`}
+                  value={template.label}
+                  onChange={(e) =>
+                    setTemplate(index, { ...template, label: e.target.value })
+                  }
+                />
+              </div>
+              <textarea
+                className="template__body"
+                value={template.body}
+                onChange={(e) =>
+                  setTemplate(index, { ...template, body: e.target.value })
+                }
+                aria-label={`${template.label} body`}
+                rows={3}
+              />
+              <p className="notice__actions">
+                <button type="button" onClick={() => removeTemplate(index)}>
+                  Remove
+                </button>
+              </p>
+            </div>
+          ))}
+          <p className="notice__actions">
+            <button type="button" onClick={addTemplate}>
+              Add template
+            </button>
+          </p>
+          <p className="help__note">
+            <code>{'{{url}}'}</code> is the link to post 1, <code>{'{{handle}}'}</code>,{' '}
+            <code>{'{{count}}'}</code> and <code>{'{{title}}'}</code> are also available.
           </p>
         </section>
 

@@ -8,12 +8,14 @@ import {
   reflowFrom,
   removePost,
   resplitFromSource,
+  setClosing,
+  setClosingText,
   setLocked,
   setPostText,
   setSource,
   splitPost,
 } from '@threader/core'
-import type { Profile, Thread } from '@threader/core'
+import type { ClosingTemplate, Profile, Thread } from '@threader/core'
 import { ComposeView } from './compose/ComposeView.js'
 import { ArrangeView } from './arrange/ArrangeView.js'
 import { HelpCard } from './HelpCard.js'
@@ -380,6 +382,10 @@ export function App() {
             showCounts={showCounts}
             onSourceChange={changeSource}
             onResplit={() => apply((t) => resplitFromSource(t, reflowOptions))}
+            onChooseEnding={(template: ClosingTemplate | null) =>
+              apply((t) => setClosing(t, template))
+            }
+            onEditClosing={(text) => apply((t) => setClosingText(t, text))}
           />
         ) : (
           <ArrangeView
@@ -393,6 +399,10 @@ export function App() {
             onToggleLock={(i) => apply((t) => setLocked(t, i, !t.posts[i]?.locked))}
             onReflow={(i) => apply((t) => reflowFrom(t, i, reflowOptions))}
             onDelete={(i) => apply((t) => removePost(t, i))}
+            onChooseEnding={(template: ClosingTemplate | null) =>
+              apply((t) => setClosing(t, template))
+            }
+            onEditClosing={(text) => apply((t) => setClosingText(t, text))}
           />
         )}
       </div>

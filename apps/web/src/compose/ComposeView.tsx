@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { counterFor, renderThread } from '@threader/core'
-import type { Profile, Thread } from '@threader/core'
+import type { ClosingTemplate, Profile, Thread } from '@threader/core'
 import { PostCard } from './PostCard.js'
+import { EndingBar } from '../EndingBar.js'
 
 const PLACEHOLDER = `Write the whole thread as one piece of text.
 
@@ -15,6 +16,8 @@ type Props = {
   showCounts: boolean
   onSourceChange: (source: string) => void
   onResplit: () => void
+  onChooseEnding: (template: ClosingTemplate | null) => void
+  onEditClosing: (text: string) => void
 }
 
 /**
@@ -28,12 +31,15 @@ export function ComposeView({
   showCounts,
   onSourceChange,
   onResplit,
+  onChooseEnding,
+  onEditClosing,
 }: Props) {
   const [confirming, setConfirming] = useState(false)
 
   const count = useMemo(() => counterFor(profile.platform), [profile.platform])
   const rendered = useMemo(() => renderThread(thread, profile), [thread, profile])
 
+  const posts = rendered.filter((p) => !p.isClosing)
   const overCount = rendered.filter((p) => p.overLimit).length
 
   return (
@@ -88,29 +94,40 @@ export function ComposeView({
         <header className="pane__head">
           <h2>Thread</h2>
           <span className="pane__meta">
-            {rendered.length === 0
+            {posts.length === 0
               ? 'nothing yet'
-              : `${rendered.length} post${rendered.length === 1 ? '' : 's'}`}
+              : `${posts.length} post${posts.length === 1 ? '' : 's'}`}
+            {thread.closing ? ' + closing' : ''}
             {overCount > 0 && <strong className="warn"> · {overCount} over limit</strong>}
           </span>
         </header>
 
         <div className="preview">
-          {rendered.length === 0 ? (
+          {posts.length === 0 ? (
             <p className="empty">Posts will appear here as you write.</p>
           ) : (
-            rendered.map((post, index) => (
-              <PostCard
-                key={post.id}
-                text={post.text}
-                index={index}
-                total={rendered.length}
-                chars={post.chars}
-                limit={post.limit}
-                showCount={showCounts}
-              />
-            ))
+            posts
+              .map((post, index, list) => (
+                <PostCard
+                  key={post.id}
+                  text={post.text}
+                  index={index}
+                  total={list.length}
+                  chars={post.chars}
+                  limit={post.limit}
+                  showCount={showCounts}
+                />
+              ))
           )}
+
+          <EndingBar
+            thread={thread}
+            profile={profile}
+            rendered={rendered.find((p) => p.isClosing)}
+            showCounts={showCounts}
+            onChoose={onChooseEnding}
+            onEdit={onEditClosing}
+          />
         </div>
       </section>
     </div>

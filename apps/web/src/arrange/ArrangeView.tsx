@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { applyNumbering, renderThread, threadTotal } from '@threader/core'
-import type { Profile, Thread } from '@threader/core'
+import type { ClosingTemplate, Profile, Thread } from '@threader/core'
 import { PostEditor } from './PostEditor.js'
+import { EndingBar } from '../EndingBar.js'
 
 type Props = {
   thread: Thread
@@ -14,6 +15,8 @@ type Props = {
   onToggleLock: (index: number) => void
   onReflow: (index: number) => void
   onDelete: (index: number) => void
+  onChooseEnding: (template: ClosingTemplate | null) => void
+  onEditClosing: (text: string) => void
 }
 
 /**
@@ -33,6 +36,7 @@ export function ArrangeView(props: Props) {
         <h2>Posts</h2>
         <span className="pane__meta">
           {thread.posts.length} post{thread.posts.length === 1 ? '' : 's'}
+          {thread.closing ? ' + closing' : ''}
           {overCount > 0 && (
             <strong className="warn"> · {overCount} over limit — cannot publish</strong>
           )}
@@ -77,6 +81,15 @@ export function ArrangeView(props: Props) {
             )
           })
         )}
+
+        <EndingBar
+          thread={thread}
+          profile={profile}
+          rendered={rendered.find((p) => p.isClosing)}
+          showCounts={props.showCounts}
+          onChoose={props.onChooseEnding}
+          onEdit={props.onEditClosing}
+        />
       </div>
     </section>
   )

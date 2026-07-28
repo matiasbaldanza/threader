@@ -829,6 +829,70 @@ body {
   color: var(--danger);
 }
 
+/* ── Ending ────────────────────────────────────────────────── */
+
+.ending {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--line);
+}
+
+.ending__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.ending__head h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.ending__head select {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.ending__input {
+  min-height: 3.5rem;
+}
+
+.ending__note {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.template {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.625rem;
+}
+
+.template__body {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.45rem;
+  resize: vertical;
+}
+
 /* ── Character meter ───────────────────────────────────────── */
 
 .meter {

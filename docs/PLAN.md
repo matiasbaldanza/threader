@@ -415,7 +415,7 @@ autosave. *Commit: local file storage.*
 **Stage 5 — Profiles, minimal.** ✅ Char limit + numbering config + handle. Profile picker on
 each thread. *Commit: profiles.*
 
-**Stage 6 — Endings.** The three ending kinds (§5): end markers in `NumberingConfig` with
+**Stage 6 — Endings.** ✅ The three ending kinds (§5): end markers in `NumberingConfig` with
 their budget reservation, closing-post templates on the profile, per-thread selection, and
 placeholder rendering with its 23-char reservation. *Commit: thread endings.*
 

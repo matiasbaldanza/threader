@@ -3,9 +3,9 @@
 A local-first tool for writing X threads: paste your text, let it split and number itself,
 then publish it through a step-by-step wizard that hands you one thing at a time.
 
-**Status: Stage 5.** Threads live on disk under `~/threader/` and save themselves as you
-type. Compose, arrange, a thread list, and per-account profiles all work. Endings — the
-closing post and `EOF`-style markers — are next.
+**Status: Stage 6.** Threads live on disk under `~/threader/` and save themselves as you
+type. Compose, arrange, a thread list, per-account profiles, and thread endings all work.
+The publish wizard is next — the payoff stage.
 
 ## Why
 
@@ -92,6 +92,20 @@ would wipe out the edits you just made by hand. You can rebuild the posts from t
 whenever you like — Threader asks first, because it throws those edits away.
 
 **⌘Z undoes anything**, including a deleted post. **⌘\** hides the thread list.
+
+### How a thread ends
+
+Not every thread wants a call to action — one that ends by asking for a repost reads like
+an ad. So each thread picks one of two endings:
+
+- **No closing post.** The thread just stops. If the profile has an end marker, the last
+  post ends `12/12 EOF` (or `FIN`, or whatever you set).
+- **A closing post**, from a template on the profile: a repost ask, a newsletter CTA,
+  anything you reuse. `{{url}}` becomes the link to post 1 — which does not exist until
+  you publish it, so it is counted as 23 characters until then, the same as any link.
+
+The two are alternatives. A closing post already is the ending, so the marker never
+appears alongside one.
 
 ### Profiles
 
