@@ -258,6 +258,47 @@ You also get a permanent record of every post URL, which is genuinely useful lat
 A "skip this post" and a "back" control both exist; going back does not un-publish
 anything, it just lets you re-copy something you fumbled.
 
+### ⚠️ Known blocker to resolve before Stage 7: X eats line breaks on paste
+
+Observed in the X web composer (a regression from the 2024/25 redesign, still unfixed as of
+July 2026): **pasting text collapses newlines into spaces.** Line breaks have to be
+retyped by hand.
+
+This is not a cosmetic problem for Threader — it defeats the copy step, which is the whole
+point of the wizard:
+
+- The numbering separator is `"\n\n"` by default, so `1/12` would land inline as
+  `…end of the post 1/12` instead of on its own line.
+- Every paragraph break *inside* a post is lost, so a two-paragraph post arrives as one
+  slab.
+- It fails silently. The paste looks like it worked, and you would only notice after
+  posting.
+
+**Investigate before building the copy step**, roughly in order of promise:
+
+1. **Write `text/html` alongside `text/plain`.** `navigator.clipboard.write()` can carry
+   several flavours; the composer is a `contenteditable`, so it may honour an HTML flavour
+   with `<br>` or `<div>` where it flattens plain text. Most likely fix, and cheap to test.
+2. **Check whether the loss is on copy or on paste.** Paste the same text into a plain
+   textarea to confirm the newlines survive the clipboard — that tells us whether this is
+   ours to fix at all.
+3. **Try `\r\n` and ` `** as separators; some editors treat them differently.
+4. **Synthetic typing** into the composer — rejected in advance unless everything else
+   fails; it means driving X's DOM, which is fragile and against the spirit of ADR-0002.
+
+**If none of them work**, the fallbacks are all honest but worse, and the choice is the
+user's, not ours to make silently:
+
+- Make the numbering separator `" "` for X profiles, so numbering at least reads correctly
+  inline. `NumberingConfig.separator` already supports this — no code change, just a
+  default.
+- Have the wizard **warn on any post containing a newline** and show exactly where the
+  breaks need retyping, so the manual fix-up is guided rather than remembered.
+- Copy each paragraph as its own clipboard step, the way assets are handled.
+
+Worth re-testing on the day: X ships composer changes often, and this may simply be fixed
+by then.
+
 ---
 
 ## 7. Storage layout
@@ -333,6 +374,11 @@ rendering with its 23-char reservation. *Commit: closing post templates.*
 clipboard, URL capture and validation, resumable `publishRun`, summary screen.
 **This is the payoff stage.** *Commit: publish wizard.*
 
+> **Start this stage by settling the line-break problem** (§6). X's composer collapses
+> pasted newlines into spaces, which breaks both the numbering separator and any paragraph
+> inside a post. Spike the `text/html` clipboard flavour before building the step machine —
+> the answer changes what the copy step has to do, and possibly the default separator.
+
 **Stage 8 — Assets.** Drag-drop onto post cards, upload endpoint, thumbnails, alt text,
 copy-image and reveal-in-Finder inside the wizard. *Commit: assets.*
 
@@ -370,3 +416,8 @@ with its own limit, rendering the same `posts` differently).
    field later.
 4. **Editing an already-published thread** — currently unsupported; published threads are
    read-only archives. Revisit if it bites.
+5. **Whether `\n\n` survives a paste into X at all** — see the blocker in §6. If it turns
+   out newlines can never survive, the whole layout vocabulary shrinks: paragraph breaks
+   inside a post stop being expressible, which affects the splitter's break preference
+   (paragraphs would no longer be worth preferring over sentences) as well as the wizard.
+   Do not act on this until it is actually measured.

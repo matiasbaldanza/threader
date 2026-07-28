@@ -35,6 +35,10 @@ docs/decisions/    ADRs
 creates a second lockfile and breaks the strict `node_modules` layout that keeps `core`
 honest.
 
+**Node ≥ 22.13**, pinned in `.nvmrc` — run `nvm use` first. pnpm 11's launcher requires it
+and fails with `No such built-in module: node:sqlite` on older Node. pnpm settings live in
+`pnpm-workspace.yaml`, not the `pnpm` field of `package.json`, which pnpm 11 ignores.
+
 ```bash
 pnpm install            # all workspace projects
 pnpm dev                # web app on :5173

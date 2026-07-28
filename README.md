@@ -33,7 +33,13 @@ Threader never posts anything itself.
 
 ## Getting started
 
-Requires **Node ≥ 20.10** and **pnpm ≥ 10** — pnpm only, not npm or yarn ([ADR-0008](docs/decisions/0008-pnpm-workspaces.md)).
+Requires **Node ≥ 22.13** and **pnpm ≥ 10** — pnpm only, not npm or yarn ([ADR-0008](docs/decisions/0008-pnpm-workspaces.md)).
+The Node floor comes from pnpm 11's launcher, not from anything in this codebase. There is
+an `.nvmrc`, so:
+
+```bash
+nvm use
+```
 
 ```bash
 pnpm install
