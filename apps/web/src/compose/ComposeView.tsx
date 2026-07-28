@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { applyNumbering, counterFor, split } from '@threader/core'
-import type { Profile } from '@threader/core'
+import { counterFor, renderThread } from '@threader/core'
+import type { Profile, Thread } from '@threader/core'
 import { PostCard } from './PostCard.js'
 
 const PLACEHOLDER = `Write the whole thread as one piece of text.
@@ -10,47 +10,70 @@ Threader splits it at paragraph and sentence boundaries, and numbers it as you t
 Put --- on its own line to force a break exactly where you want one.`
 
 type Props = {
+  thread: Thread
   profile: Profile
   showCounts: boolean
+  onSourceChange: (source: string) => void
+  onResplit: () => void
 }
 
 /**
- * Compose mode (docs/PLAN.md §4). Source text is the single truth here; splits are
- * derived on every keystroke and never edited. Per-post editing — and the `detached`
- * flag that guards it — arrives with Arrange mode in Stage 3.
+ * Compose mode (docs/PLAN.md §4). While the thread is attached, the source is the
+ * truth and posts follow it on every keystroke. Once detached — see ADR-0004 — the
+ * posts stop following, and getting them back in sync is an explicit, confirmed act.
  */
-export function ComposeView({ profile, showCounts }: Props) {
-  const [source, setSource] = useState('')
+export function ComposeView({
+  thread,
+  profile,
+  showCounts,
+  onSourceChange,
+  onResplit,
+}: Props) {
+  const [confirming, setConfirming] = useState(false)
 
   const count = useMemo(() => counterFor(profile.platform), [profile.platform])
+  const rendered = useMemo(() => renderThread(thread, profile), [thread, profile])
 
-  const posts = useMemo(
-    () => split(source, { charLimit: profile.charLimit, numbering: profile.numbering }),
-    [source, profile.charLimit, profile.numbering],
-  )
-
-  const rendered = useMemo(
-    () =>
-      posts.map((body, index) => {
-        const text = applyNumbering(body, { index, total: posts.length }, profile.numbering)
-        return { text, chars: count(text) }
-      }),
-    [posts, profile.numbering, count],
-  )
-
-  const overCount = rendered.filter((p) => p.chars > profile.charLimit).length
+  const overCount = rendered.filter((p) => p.overLimit).length
 
   return (
     <div className="compose">
       <section className="pane pane--source">
         <header className="pane__head">
           <h2>Draft</h2>
-          <span className="pane__meta">{count(source)} characters</span>
+          <span className="pane__meta">{count(thread.source)} characters</span>
         </header>
+
+        {thread.detached && (
+          <div className="notice">
+            <p>
+              You have edited the posts by hand, so they no longer follow this draft.
+              Keep writing here and the posts will stay as they are — rebuilding them
+              will <strong>throw those edits away</strong>.
+            </p>
+            {confirming ? (
+              <p className="notice__actions">
+                <button type="button" className="danger" onClick={onResplit}>
+                  Throw away my edits and rebuild
+                </button>
+                <button type="button" onClick={() => setConfirming(false)}>
+                  Cancel
+                </button>
+              </p>
+            ) : (
+              <p className="notice__actions">
+                <button type="button" onClick={() => setConfirming(true)}>
+                  Rebuild posts from draft
+                </button>
+              </p>
+            )}
+          </div>
+        )}
+
         <textarea
           className="editor"
-          value={source}
-          onChange={(e) => setSource(e.target.value)}
+          value={thread.source}
+          onChange={(e) => onSourceChange(e.target.value)}
           placeholder={PLACEHOLDER}
           spellCheck
           autoFocus
@@ -65,9 +88,9 @@ export function ComposeView({ profile, showCounts }: Props) {
         <header className="pane__head">
           <h2>Thread</h2>
           <span className="pane__meta">
-            {posts.length === 0
+            {rendered.length === 0
               ? 'nothing yet'
-              : `${posts.length} post${posts.length === 1 ? '' : 's'}`}
+              : `${rendered.length} post${rendered.length === 1 ? '' : 's'}`}
             {overCount > 0 && <strong className="warn"> · {overCount} over limit</strong>}
           </span>
         </header>
@@ -78,12 +101,12 @@ export function ComposeView({ profile, showCounts }: Props) {
           ) : (
             rendered.map((post, index) => (
               <PostCard
-                key={index}
+                key={post.id}
                 text={post.text}
                 index={index}
                 total={rendered.length}
                 chars={post.chars}
-                limit={profile.charLimit}
+                limit={post.limit}
                 showCount={showCounts}
               />
             ))

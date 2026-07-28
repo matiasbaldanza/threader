@@ -317,7 +317,7 @@ long unbreakable tokens. No UI at all yet — this is the piece everything else 
 hardcoded 280 limit and `{n}/{total}` numbering. Nothing persists yet. This is the first
 moment the tool is actually useful. *Commit: compose view.*
 
-**Stage 3 — Arrange mode.** Post cards, split/merge/reorder/lock/delete, the `detached`
+**Stage 3 — Arrange mode.** ✅ Post cards, split/merge/reorder/lock/delete, the `detached`
 flag and its confirm dialog, per-card counters. *Commit: manual split editing.*
 
 **Stage 4 — Persistence.** `Storage` interface, `FsStore`, the server, thread list,

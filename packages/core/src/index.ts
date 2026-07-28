@@ -41,3 +41,19 @@ export {
   tokenize,
   type SplitOptions,
 } from './split.js'
+
+export {
+  joinBodies,
+  mergePosts,
+  movePost,
+  postsFromBodies,
+  reflowFrom,
+  removePost,
+  resplitFromSource,
+  setLocked,
+  setPostText,
+  setSource,
+  splitPost,
+  type OpContext,
+  type ReflowOptions,
+} from './operations.js'

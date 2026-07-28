@@ -3,8 +3,9 @@
 A local-first tool for writing X threads: paste your text, let it split and number itself,
 then publish it through a step-by-step wizard that hands you one thing at a time.
 
-**Status: Stage 2.** Compose mode works — type a draft, watch it split and number itself
-live. Per-post editing lands in Stage 3.
+**Status: Stage 3.** Compose and arrange both work — write a draft, watch it split and
+number itself, then edit, split, merge, reorder and lock posts by hand. Nothing persists
+yet; that is Stage 4.
 
 ## Why
 
@@ -47,6 +48,44 @@ Then open http://localhost:5173.
 | `pnpm test` | Vitest across the workspace |
 | `pnpm typecheck` | `tsc --noEmit` in every package |
 | `pnpm build` | Build every package |
+
+## Using Threader
+
+There is a `?` in the top bar that explains all of this inside the app. The short
+version:
+
+### Two ways to look at a thread
+
+**Compose** is where you write *text* — one box for the whole thread. Threader splits and
+numbers it as you type. Put `---` on its own line to force a break exactly where you want
+one.
+
+**Arrange** is where you handle *posts* — each one becomes its own editable card. Go here
+when the automatic split got something almost right and you want to fix it by hand.
+
+### The buttons on each post
+
+| Button | What it does | When you'd reach for it |
+|---|---|---|
+| **Split here** | Breaks one post in two at your cursor | A break landed somewhere that reads badly, or a line deserves a post of its own |
+| **Merge ↓** | Pulls the post below up into this one | A break wasn't earning its keep, or a post is too thin to stand alone |
+| **Tidy ↓** | Pours this post and the ones below it back together and re-splits them evenly | After a few edits the posts have gone lumpy — one is 260 characters, the next is 40 |
+| **Keep as is** | Protects a post from Tidy, and stops Tidy running past it | You deliberately left a one-line punchline short |
+| **↑ ↓ ✕** | Move or delete a post | Numbering always follows |
+
+Splitting mid-sentence and merging back gives you the sentence exactly as it was — the
+seam does not become a paragraph break.
+
+### Two things worth knowing
+
+**Numbering is never yours to type.** It is added when the post is rendered, so it cannot
+go stale. Reorder, split or merge freely and `1/9` fixes itself.
+
+**Editing a post disconnects it from the draft.** Otherwise your next keystroke in Compose
+would wipe out the edits you just made by hand. You can rebuild the posts from the draft
+whenever you like — Threader asks first, because it throws those edits away.
+
+**⌘Z undoes anything**, including a deleted post.
 
 ## Running the tests
 

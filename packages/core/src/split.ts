@@ -16,6 +16,14 @@ export type SplitOptions = {
    * mid-sentence, but not if that leaves the post less than half full.
    */
   minFill?: number
+  /**
+   * Position of the first resulting post within the wider thread. Reflowing from
+   * post 6 must budget post 6 as "6/12", not as "1/n" — otherwise a profile that
+   * leaves post 1 unnumbered would hand the run a budget it does not have.
+   */
+  startIndex?: number
+  /** Posts elsewhere in the thread, counted into `{total}`. */
+  otherPosts?: number
 }
 
 /** A line containing only `---` is an explicit break the splitter never crosses. */
@@ -230,12 +238,18 @@ export function split(source: string, opts: SplitOptions): string[] {
   const text = normalize(source)
   if (!text) return []
 
+  const startIndex = opts.startIndex ?? 0
+  const otherPosts = opts.otherPosts ?? 0
+
   const segments = splitOnForcedBreaks(text).map(tokenize)
 
-  const pack = (total: number): string[] => {
+  /** `local` is how many posts this run produces; the total also counts the rest. */
+  const pack = (local: number): string[] => {
+    const total = otherPosts + local
     const posts: string[] = []
     const budgetAt = (index: number) =>
-      opts.charLimit - numberingOverhead({ index, total }, numbering, count)
+      opts.charLimit -
+      numberingOverhead({ index: startIndex + index, total }, numbering, count)
     for (const tokens of segments) {
       packSegment(
         tokens.map((t) => ({ ...t })),
@@ -248,19 +262,19 @@ export function split(source: string, opts: SplitOptions): string[] {
     return posts
   }
 
-  let total = Math.max(1, segments.length)
-  let posts = pack(total)
-  const seen = new Set<number>([total])
+  let local = Math.max(1, segments.length)
+  let posts = pack(local)
+  const seen = new Set<number>([local])
 
-  for (let i = 0; i < 3 && posts.length !== total; i++) {
+  for (let i = 0; i < 3 && posts.length !== local; i++) {
     if (seen.has(posts.length)) {
-      total = Math.max(...seen, posts.length)
-      posts = pack(total)
+      local = Math.max(...seen, posts.length)
+      posts = pack(local)
       break
     }
-    total = posts.length
-    seen.add(total)
-    posts = pack(total)
+    local = posts.length
+    seen.add(local)
+    posts = pack(local)
   }
 
   return posts
