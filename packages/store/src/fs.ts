@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { withProfileDefaults } from '@threader/core'
 import type { Profile, Thread } from '@threader/core'
 import type { Storage } from './storage.js'
 import { assertSafeId, resolveWithin, slugify } from './paths.js'
@@ -193,7 +194,7 @@ export class FsStore implements Storage {
     for (const file of entries) {
       if (!file.endsWith('.json')) continue
       const profile = await readJson<Profile>(join(this.profilesDir, file))
-      if (profile?.id) profiles.push(profile)
+      if (profile?.id) profiles.push(withProfileDefaults(profile))
     }
     return profiles.sort((a, b) => a.name.localeCompare(b.name))
   }
