@@ -4,7 +4,6 @@ type Props = {
   threads: Thread[]
   currentId: string | null
   onSelect: (id: string) => void
-  onNew: () => void
   onDelete: (id: string) => void
 }
 
@@ -18,14 +17,13 @@ function when(iso: string): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
-export function ThreadList({ threads, currentId, onSelect, onNew, onDelete }: Props) {
+export function ThreadList({ threads, currentId, onSelect, onDelete }: Props) {
   return (
     <aside className="sidebar">
+      {/* "New" lives in the top bar, not here — it has to stay reachable when this
+          panel is collapsed. */}
       <header className="sidebar__head">
         <h2>Threads</h2>
-        <button type="button" className="ghost" onClick={onNew} title="New thread">
-          New
-        </button>
       </header>
 
       <ul className="sidebar__list">

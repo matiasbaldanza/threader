@@ -19,6 +19,7 @@ import { ArrangeView } from './arrange/ArrangeView.js'
 import { HelpCard } from './HelpCard.js'
 import { ThreadList } from './ThreadList.js'
 import { HttpStore } from './storage/httpStore.js'
+import { useLocalPref } from './useLocalPref.js'
 import { useAutosave } from './storage/useAutosave.js'
 
 type Mode = 'compose' | 'arrange'
@@ -44,6 +45,7 @@ export function App() {
   const [history, setHistory] = useState<Thread[]>([])
   const [mode, setMode] = useState<Mode>('compose')
   const [showCounts, setShowCounts] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useLocalPref('sidebarOpen', true)
   const [helpOpen, setHelpOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -140,10 +142,14 @@ export function App() {
         e.preventDefault()
         undo()
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+        e.preventDefault()
+        setSidebarOpen(!sidebarOpen)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo])
+  }, [undo, sidebarOpen, setSidebarOpen])
 
   const selectThread = useCallback(
     async (id: string) => {
@@ -185,6 +191,16 @@ export function App() {
   return (
     <div className="app">
       <header className="topbar">
+        <button
+          type="button"
+          className="ghost ghost--icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          title={`${sidebarOpen ? 'Hide' : 'Show'} threads (\u2318\\)`}
+          aria-label={`${sidebarOpen ? 'Hide' : 'Show'} thread list`}
+          aria-expanded={sidebarOpen}
+        >
+          {sidebarOpen ? '\u2337' : '\u2338'}
+        </button>
         <h1>Threader</h1>
         <input
           className="topbar__title"
@@ -210,6 +226,9 @@ export function App() {
 
         <div className="topbar__right">
           <SaveIndicator state={saveState} />
+          <button type="button" className="ghost" onClick={newThread} title="New thread">
+            New
+          </button>
           <button
             type="button"
             className="ghost"
@@ -242,13 +261,14 @@ export function App() {
       {error && <p className="banner banner--error">{error}</p>}
 
       <div className="workspace">
+        {sidebarOpen && (
         <ThreadList
           threads={threads}
           currentId={thread.id}
           onSelect={(id) => void selectThread(id)}
-          onNew={newThread}
           onDelete={(id) => void deleteThread(id)}
         />
+        )}
 
         {mode === 'compose' ? (
           <ComposeView

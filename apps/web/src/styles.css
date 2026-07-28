@@ -215,6 +215,16 @@ body {
   cursor: pointer;
 }
 
+.ghost--icon {
+  padding: 0.15rem 0.45rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.ghost--icon:hover {
+  color: var(--fg);
+}
+
 .ghost:disabled {
   color: var(--muted);
   opacity: 0.5;
