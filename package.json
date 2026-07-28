@@ -13,13 +13,18 @@
     "build": "pnpm -r build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:verbose": "vitest run --reporter=verbose",
+    "test:ui": "vitest --ui",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "@vitest/ui": "^3.2.7",
     "typescript": "^5.7.2",
     "vitest": "^3.0.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
