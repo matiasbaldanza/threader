@@ -48,6 +48,82 @@ Then open http://localhost:5173.
 | `pnpm typecheck` | `tsc --noEmit` in every package |
 | `pnpm build` | Build every package |
 
+## Running the tests
+
+Splitting and counting are the whole value of this tool, and both are test-driven — a new
+edge case gets a test in `packages/core` before it gets a fix. Run everything from the repo
+root:
+
+```bash
+pnpm test
+```
+
+```
+ ✓ packages/core/src/factories.test.ts (3 tests) 4ms
+ ✓ packages/core/src/count.test.ts (20 tests) 8ms
+ ✓ packages/core/src/numbering.test.ts (13 tests) 5ms
+ ✓ packages/store/src/index.test.ts (1 test) 4ms
+ ✓ packages/core/src/split.test.ts (32 tests) 205ms
+
+ Test Files  5 passed (5)
+      Tests  69 passed (69)
+```
+
+That is the summary view — failures still print a full diff. To see every test name instead
+of a per-file roll-up:
+
+```bash
+pnpm test:verbose
+```
+
+```
+ ✓ packages/core/src/count.test.ts > countX — URLs > counts a bare domain as a URL — X auto-links it 0ms
+ ✓ packages/core/src/count.test.ts > countX — weighted ranges > counts a ZWJ emoji sequence as a single emoji 0ms
+ ✓ packages/core/src/split.test.ts > split — forced breaks > always starts a new post at --- 1ms
+```
+
+### Watch mode
+
+Leave this open while working on `core` — it re-runs only the tests affected by each save:
+
+```bash
+pnpm test:watch
+```
+
+Press `a` to re-run everything, `f` to re-run only failures, `q` to quit.
+
+### Browser UI
+
+A test tree, per-test timings, rendered diffs, and a module graph, at
+http://localhost:51204/__vitest__/:
+
+```bash
+pnpm test:ui
+```
+
+Both watch mode and the UI need an interactive terminal — they exit immediately if stdin
+is not a TTY, so run them yourself rather than from a script or CI step.
+
+### Running part of the suite
+
+Filter by file path:
+
+```bash
+pnpm vitest run split
+```
+
+Filter by test name, across all files:
+
+```bash
+pnpm vitest run -t "emoji"
+```
+
+One package only:
+
+```bash
+pnpm vitest run packages/core
+```
+
 ## Documentation
 
 - [docs/PLAN.md](docs/PLAN.md) — the spec: data model, splitting algorithm, wizard flow, build stages
