@@ -431,6 +431,15 @@ clipboard, URL capture and validation, resumable `publishRun`, summary screen.
 **Stage 8 — Assets.** Drag-drop onto post cards, upload endpoint, thumbnails, alt text,
 copy-image and reveal-in-Finder inside the wizard. *Commit: assets.*
 
+> **Decide the folder-name drift here.** A thread's folder name is fixed at first save,
+> but its title keeps following the first line of the draft until you name it yourself —
+> so a thread can sit in a folder named after a hook that no longer exists. Harmless
+> today: the title in `thread.json` is always right, the sidebar shows the title, and you
+> can rename a folder in Finder because threads are found by scanning and reading the id,
+> not by folder name. It starts to cost something once assets live inside that folder and
+> renaming means rewriting paths. Choose then between auto-renaming while a thread is
+> unpublished and asset-free, an explicit "rename folder" action, or leaving it frozen.
+
 **Stage 9 — Style rules.** Per-profile lint, advisory only, never auto-rewriting: emoji
 density, hashtag policy, sign-off presence, hook-post reminder, "post 1 has no link"
 (links in post 1 suppress reach). Warnings on cards, never blocking. *Commit: style lint.*
