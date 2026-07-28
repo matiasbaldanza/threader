@@ -313,7 +313,7 @@ strict, Vitest, one passing test. *Commit: scaffold.*
 long unbreakable tokens. No UI at all yet — this is the piece everything else rests on.
 *Commit: core splitting + numbering.*
 
-**Stage 2 — Compose mode.** Textarea on the left, live post preview on the right,
+**Stage 2 — Compose mode.** ✅ Textarea on the left, live post preview on the right,
 hardcoded 280 limit and `{n}/{total}` numbering. Nothing persists yet. This is the first
 moment the tool is actually useful. *Commit: compose view.*
 

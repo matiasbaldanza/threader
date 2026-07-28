@@ -1,31 +1,26 @@
+import { useMemo } from 'react'
 import { createProfile } from '@threader/core'
+import { ComposeView } from './compose/ComposeView.js'
 
 /**
- * Stage 0 placeholder. Compose mode lands in Stage 2 (docs/PLAN.md §8) — this
- * screen exists only to prove the workspace wiring: the web app importing the
- * headless core.
+ * Stage 2 — compose mode only, with a hardcoded profile. Real profiles and
+ * persistence arrive in Stages 4 and 5 (docs/PLAN.md §8).
  */
 export function App() {
-  const profile = createProfile({ name: 'Main', handle: '@matiasbaldanza' })
+  const profile = useMemo(
+    () => createProfile({ name: 'Main', handle: '@matiasbaldanza' }),
+    [],
+  )
 
   return (
-    <main>
-      <h1>Threader</h1>
-      <p className="muted">Stage 0 — scaffold. Compose mode arrives in Stage 2.</p>
-      <dl>
-        <dt>Profile</dt>
-        <dd>
-          {profile.name} · {profile.handle}
-        </dd>
-        <dt>Platform</dt>
-        <dd>{profile.platform}</dd>
-        <dt>Character limit</dt>
-        <dd>{profile.charLimit}</dd>
-        <dt>Numbering</dt>
-        <dd>
-          <code>{profile.numbering.format}</code> ({profile.numbering.position})
-        </dd>
-      </dl>
-    </main>
+    <div className="app">
+      <header className="topbar">
+        <h1>Threader</h1>
+        <span className="topbar__profile">
+          {profile.handle} · {profile.charLimit} chars · {profile.numbering.format}
+        </span>
+      </header>
+      <ComposeView profile={profile} />
+    </div>
   )
 }
