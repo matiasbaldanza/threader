@@ -305,10 +305,10 @@ become a real hole.
 Each stage is a working app and a sensible commit. Nothing later is a prerequisite for
 using what came before.
 
-**Stage 0 — Scaffold.** pnpm workspace, `core` / `store` / `web` / `server`, TypeScript
+**Stage 0 — Scaffold.** ✅ pnpm workspace, `core` / `store` / `web` / `server`, TypeScript
 strict, Vitest, one passing test. *Commit: scaffold.*
 
-**Stage 1 — The core, headless.** `countChars`, `split`, `renderNumbering`, `renderPost`,
+**Stage 1 — The core, headless.** ✅ `countChars`, `split`, `renderNumbering`, `renderPost`,
 `renderThread`. Tests covering: URLs, emoji, forced breaks, the numbering fixpoint,
 long unbreakable tokens. No UI at all yet — this is the piece everything else rests on.
 *Commit: core splitting + numbering.*

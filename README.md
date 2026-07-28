@@ -3,7 +3,8 @@
 A local-first tool for writing X threads: paste your text, let it split and number itself,
 then publish it through a step-by-step wizard that hands you one thing at a time.
 
-**Status: Stage 0.** Workspace scaffolded; the actual splitting logic lands in Stage 1.
+**Status: Stage 1.** The headless core — counting, splitting, numbering — is done and
+tested. The UI is still a placeholder; compose mode lands in Stage 2.
 
 ## Why
 
