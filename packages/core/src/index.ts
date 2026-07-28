@@ -5,6 +5,8 @@ export {
   createProfile,
   createThread,
   defaultNumbering,
+  deriveTitle,
+  isBlankThread,
   type Clock,
   type Ids,
 } from './factories.js'

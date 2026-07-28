@@ -39,7 +39,7 @@ threader/
 │   └── store/       Storage interface + FsStore (Node) [+ MemoryStore for tests]
 ├── apps/
 │   ├── web/         React + Vite + TypeScript (the only UI in the MVP)
-│   └── server/      ~150 lines of Fastify/Express: files, assets, OS integrations
+│   └── server/      ~150 lines of node:http: files, assets, OS integrations
 └── docs/
     ├── PLAN.md
     └── decisions/   ADRs — one file per decision, numbered, superseded not edited
@@ -409,7 +409,7 @@ moment the tool is actually useful. *Commit: compose view.*
 **Stage 3 — Arrange mode.** ✅ Post cards, split/merge/reorder/lock/delete, the `detached`
 flag and its confirm dialog, per-card counters. *Commit: manual split editing.*
 
-**Stage 4 — Persistence.** `Storage` interface, `FsStore`, the server, thread list,
+**Stage 4 — Persistence.** ✅ `Storage` interface, `FsStore`, the server, thread list,
 autosave. *Commit: local file storage.*
 
 **Stage 5 — Profiles, minimal.** Char limit + numbering config + handle. Profile picker on

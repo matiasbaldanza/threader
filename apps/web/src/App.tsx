@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   createProfile,
   createThread,
+  deriveTitle,
   mergePosts,
   movePost,
   reflowFrom,
@@ -12,40 +13,111 @@ import {
   setSource,
   splitPost,
 } from '@threader/core'
-import type { Thread } from '@threader/core'
+import type { Profile, Thread } from '@threader/core'
 import { ComposeView } from './compose/ComposeView.js'
 import { ArrangeView } from './arrange/ArrangeView.js'
 import { HelpCard } from './HelpCard.js'
+import { ThreadList } from './ThreadList.js'
+import { HttpStore } from './storage/httpStore.js'
+import { useAutosave } from './storage/useAutosave.js'
 
 type Mode = 'compose' | 'arrange'
 
 const HISTORY_LIMIT = 50
 
+/** Until Stage 5, the profile is whatever the server seeded, under a fixed id. */
+const FALLBACK_PROFILE = createProfile(
+  { name: 'Main', handle: '@you' },
+  { ids: () => 'default' },
+)
+
 /**
- * Stage 3 — compose and arrange, with a hardcoded profile and in-memory state.
- * Persistence arrives in Stage 4, profiles in Stage 5 (docs/PLAN.md §8).
+ * Stage 4 — threads live on disk and save themselves (docs/PLAN.md §8). Profiles are
+ * still read-only here; editing them is Stage 5.
  */
 export function App() {
-  const profile = useMemo(
-    () => createProfile({ name: 'Main', handle: '@matiasbaldanza' }),
-    [],
-  )
+  const store = useMemo(() => new HttpStore(), [])
+
+  const [profile, setProfile] = useState<Profile>(FALLBACK_PROFILE)
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [thread, setThread] = useState<Thread | null>(null)
+  const [history, setHistory] = useState<Thread[]>([])
+  const [mode, setMode] = useState<Mode>('compose')
+  const [showCounts, setShowCounts] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const { state: saveState, markSaved } = useAutosave(thread, store)
+
   const reflowOptions = useMemo(
     () => ({ charLimit: profile.charLimit, numbering: profile.numbering }),
     [profile],
   )
 
-  const [thread, setThread] = useState<Thread>(() =>
-    createThread({ profileId: profile.id, title: 'Untitled thread' }),
+  /** Switching threads must not let ⌘Z reach back into a different thread. */
+  const open = useCallback(
+    (next: Thread) => {
+      setThread(next)
+      setHistory([])
+      markSaved(next)
+    },
+    [markSaved],
   )
-  const [history, setHistory] = useState<Thread[]>([])
-  const [mode, setMode] = useState<Mode>('compose')
-  const [showCounts, setShowCounts] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
 
-  /** Every mutation goes through here, so undo covers all of them — including delete. */
+  const newThread = useCallback(() => {
+    setThread((current) => {
+      const fresh = createThread({ profileId: profile.id })
+      setHistory([])
+      // A brand new thread is not on disk yet, so it must NOT be marked saved.
+      setThreads((list) => (current ? [current, ...list.filter((t) => t.id !== current.id)] : list))
+      return fresh
+    })
+  }, [profile.id])
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const [profiles, list] = await Promise.all([
+          store.listProfiles(),
+          store.listThreads(),
+        ])
+        if (cancelled) return
+        if (profiles[0]) setProfile(profiles[0])
+        setThreads(list)
+        if (list[0]) {
+          setThread(list[0])
+          markSaved(list[0])
+        } else {
+          setThread(createThread({ profileId: profiles[0]?.id ?? FALLBACK_PROFILE.id }))
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(
+            'Cannot reach the local server. Start it with `pnpm dev`, which runs both.',
+          )
+          setThread(createThread({ profileId: FALLBACK_PROFILE.id }))
+        }
+        console.error(e)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [store, markSaved])
+
+  /** Keeps the sidebar in step with the thread being edited. */
+  useEffect(() => {
+    if (!thread) return
+    setThreads((list) => {
+      const rest = list.filter((t) => t.id !== thread.id)
+      return [thread, ...rest].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    })
+  }, [thread])
+
   const apply = useCallback((next: (t: Thread) => Thread) => {
     setThread((current) => {
+      if (!current) return current
       const updated = next(current)
       if (updated === current) return current
       setHistory((past) => [...past, current].slice(-HISTORY_LIMIT))
@@ -73,13 +145,54 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [undo])
 
+  const selectThread = useCallback(
+    async (id: string) => {
+      const found = await store.getThread(id)
+      if (found) open(found)
+    },
+    [store, open],
+  )
+
+  const deleteThread = useCallback(
+    async (id: string) => {
+      await store.deleteThread(id)
+      const list = await store.listThreads()
+      setThreads(list)
+      if (thread?.id === id) {
+        if (list[0]) open(list[0])
+        else open(createThread({ profileId: profile.id }))
+      }
+    },
+    [store, thread?.id, open, profile.id],
+  )
+
+  const changeSource = useCallback(
+    (source: string) => {
+      apply((t) => {
+        const next = setSource(t, source, reflowOptions)
+        // The title follows the draft until you name the thread yourself.
+        const auto = t.title === 'Untitled thread' || t.title === deriveTitle(t.source)
+        return auto ? { ...next, title: deriveTitle(source) } : next
+      })
+    },
+    [apply, reflowOptions],
+  )
+
+  if (!thread) {
+    return <div className="app loading">Loading…</div>
+  }
+
   return (
     <div className="app">
       <header className="topbar">
         <h1>Threader</h1>
-        <span className="topbar__profile">
-          {profile.handle} · {profile.charLimit} chars · {profile.numbering.format}
-        </span>
+        <input
+          className="topbar__title"
+          value={thread.title}
+          onChange={(e) => apply((t) => ({ ...t, title: e.target.value }))}
+          aria-label="Thread title"
+          spellCheck={false}
+        />
 
         <nav className="tabs" aria-label="Editing mode">
           {(['compose', 'arrange'] as const).map((m) => (
@@ -96,6 +209,7 @@ export function App() {
         </nav>
 
         <div className="topbar__right">
+          <SaveIndicator state={saveState} />
           <button
             type="button"
             className="ghost"
@@ -125,34 +239,59 @@ export function App() {
         </div>
       </header>
 
-      {mode === 'compose' ? (
-        <ComposeView
-          thread={thread}
-          profile={profile}
-          showCounts={showCounts}
-          onSourceChange={(source) =>
-            apply((t) => setSource(t, source, reflowOptions))
-          }
-          onResplit={() => apply((t) => resplitFromSource(t, reflowOptions))}
+      {error && <p className="banner banner--error">{error}</p>}
+
+      <div className="workspace">
+        <ThreadList
+          threads={threads}
+          currentId={thread.id}
+          onSelect={(id) => void selectThread(id)}
+          onNew={newThread}
+          onDelete={(id) => void deleteThread(id)}
         />
-      ) : (
-        <ArrangeView
-          thread={thread}
-          profile={profile}
-          showCounts={showCounts}
-          onChange={(i, text) => apply((t) => setPostText(t, i, text))}
-          onSplitAt={(i, offset) => apply((t) => splitPost(t, i, offset))}
-          onMergeDown={(i) => apply((t) => mergePosts(t, i))}
-          onMove={(i, direction) => apply((t) => movePost(t, i, i + direction))}
-          onToggleLock={(i) =>
-            apply((t) => setLocked(t, i, !t.posts[i]?.locked))
-          }
-          onReflow={(i) => apply((t) => reflowFrom(t, i, reflowOptions))}
-          onDelete={(i) => apply((t) => removePost(t, i))}
-        />
-      )}
+
+        {mode === 'compose' ? (
+          <ComposeView
+            thread={thread}
+            profile={profile}
+            showCounts={showCounts}
+            onSourceChange={changeSource}
+            onResplit={() => apply((t) => resplitFromSource(t, reflowOptions))}
+          />
+        ) : (
+          <ArrangeView
+            thread={thread}
+            profile={profile}
+            showCounts={showCounts}
+            onChange={(i, text) => apply((t) => setPostText(t, i, text))}
+            onSplitAt={(i, offset) => apply((t) => splitPost(t, i, offset))}
+            onMergeDown={(i) => apply((t) => mergePosts(t, i))}
+            onMove={(i, direction) => apply((t) => movePost(t, i, i + direction))}
+            onToggleLock={(i) => apply((t) => setLocked(t, i, !t.posts[i]?.locked))}
+            onReflow={(i) => apply((t) => reflowFrom(t, i, reflowOptions))}
+            onDelete={(i) => apply((t) => removePost(t, i))}
+          />
+        )}
+      </div>
 
       {helpOpen && <HelpCard onClose={() => setHelpOpen(false)} />}
     </div>
+  )
+}
+
+function SaveIndicator({ state }: { state: ReturnType<typeof useAutosave>['state'] }) {
+  const label =
+    state === 'saved'
+      ? 'Saved'
+      : state === 'saving' || state === 'pending'
+        ? 'Saving…'
+        : state === 'error'
+          ? 'Not saved'
+          : ''
+  if (!label) return null
+  return (
+    <span className={`save save--${state}`} role="status">
+      {label}
+    </span>
   )
 }

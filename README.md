@@ -3,9 +3,8 @@
 A local-first tool for writing X threads: paste your text, let it split and number itself,
 then publish it through a step-by-step wizard that hands you one thing at a time.
 
-**Status: Stage 3.** Compose and arrange both work — write a draft, watch it split and
-number itself, then edit, split, merge, reorder and lock posts by hand. Nothing persists
-yet; that is Stage 4.
+**Status: Stage 4.** Threads live on disk as plain JSON under `~/threader/` and save
+themselves as you type. Compose, arrange, and a thread list all work. Profiles are next.
 
 ## Why
 
@@ -50,7 +49,7 @@ Then open http://localhost:5173.
 
 | Command | Does |
 |---|---|
-| `pnpm dev` | Web app on :5173 |
+| `pnpm dev` | Local server on :5174 and the web app on :5173 |
 | `pnpm test` | Vitest across the workspace |
 | `pnpm typecheck` | `tsc --noEmit` in every package |
 | `pnpm build` | Build every package |
@@ -104,14 +103,16 @@ pnpm test
 ```
 
 ```
- ✓ packages/core/src/factories.test.ts (3 tests) 4ms
+ ✓ packages/core/src/factories.test.ts (6 tests) 4ms
  ✓ packages/core/src/count.test.ts (20 tests) 8ms
  ✓ packages/core/src/numbering.test.ts (13 tests) 5ms
- ✓ packages/store/src/index.test.ts (1 test) 4ms
- ✓ packages/core/src/split.test.ts (32 tests) 205ms
+ ✓ packages/core/src/operations.test.ts (25 tests) 15ms
+ ✓ packages/store/src/storage.test.ts (1 test) 3ms
+ ✓ packages/store/src/fs.test.ts (19 tests) 194ms
+ ✓ packages/core/src/split.test.ts (32 tests) 245ms
 
- Test Files  5 passed (5)
-      Tests  69 passed (69)
+ Test Files  7 passed (7)
+      Tests  116 passed (116)
 ```
 
 That is the summary view — failures still print a full diff. To see every test name instead

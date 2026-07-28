@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createThread } from '@threader/core'
-import { MemoryStore } from './index.js'
+import { MemoryStore } from './storage.js'
 
 describe('MemoryStore', () => {
   it('round-trips a thread', async () => {

@@ -33,6 +33,17 @@ export function createPost(
   }
 }
 
+/**
+ * A thread's display name, taken from the first line of the draft. Threads are
+ * listed by name, and nobody wants to name a thread before writing it — so this is
+ * derived until the writer overrides it.
+ */
+export function deriveTitle(source: string, fallback = 'Untitled thread'): string {
+  const first = source.split('\n').map((l) => l.trim()).find((l) => l.length > 0)
+  if (!first) return fallback
+  return first.length > 60 ? `${first.slice(0, 57).trimEnd()}\u2026` : first
+}
+
 export function createThread(
   init: { profileId: string; title?: string; source?: string },
   opts: { ids?: Ids; clock?: Clock } = {},
@@ -52,6 +63,19 @@ export function createThread(
     createdAt: now,
     updatedAt: now,
   }
+}
+
+/**
+ * A thread nobody has written in yet. Used to keep untouched "New thread" clicks off
+ * the disk — otherwise every stray click leaves a folder whose name is fixed as
+ * "untitled-thread" before the title has been derived from anything.
+ */
+export function isBlankThread(thread: Thread): boolean {
+  return (
+    thread.source.trim().length === 0 &&
+    thread.posts.length === 0 &&
+    thread.closing === null
+  )
 }
 
 export function createProfile(

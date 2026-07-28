@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPost, createProfile, createThread } from './factories.js'
+import { createPost, createProfile, createThread, deriveTitle } from './factories.js'
 
 const ids = () => 'fixed-id'
 const clock = () => '2026-07-27T00:00:00.000Z'
@@ -41,5 +41,21 @@ describe('createProfile', () => {
     expect(profile.charLimit).toBe(280)
     expect(profile.numbering.format).toBe('{n}/{total}')
     expect(profile.closingTemplates[0]?.body).toContain('{{url}}')
+  })
+})
+
+describe('deriveTitle', () => {
+  it('uses the first non-empty line', () => {
+    expect(deriveTitle('\n\n  Reverse centaurs  \n\nmore text')).toBe('Reverse centaurs')
+  })
+
+  it('truncates a long first line', () => {
+    const title = deriveTitle('x'.repeat(100))
+    expect(title).toHaveLength(58)
+    expect(title.endsWith('…')).toBe(true)
+  })
+
+  it('falls back for an empty draft', () => {
+    expect(deriveTitle('   \n\n ')).toBe('Untitled thread')
   })
 })
