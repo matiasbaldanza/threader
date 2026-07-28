@@ -51,6 +51,20 @@ describe('slugify', () => {
     expect(slugify('Reverse Centaurs!')).toBe('reverse-centaurs')
   })
 
+  it('truncates on a word boundary rather than mid-word', () => {
+    const slug = slugify('Persistence is the boring feature that makes everything trustworthy')
+    expect(slug).toBe('persistence-is-the-boring')
+    expect(slug.length).toBeLessThanOrEqual(28)
+  })
+
+  it('hard-cuts a single word longer than the limit', () => {
+    expect(slugify('a'.repeat(50))).toBe('a'.repeat(28))
+  })
+
+  it('leaves a short title alone', () => {
+    expect(slugify('Short one')).toBe('short-one')
+  })
+
   it('strips accents rather than dropping the word', () => {
     expect(slugify('Café à Paris')).toBe('cafe-a-paris')
   })

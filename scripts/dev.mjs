@@ -40,7 +40,9 @@ function start(name, command, args) {
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
 
+// `watch` so server and store changes reload the same way Vite reloads the app.
 start('server', join(root, 'apps/server/node_modules/.bin/tsx'), [
+  'watch',
   join(root, 'apps/server/src/index.ts'),
 ])
 start('web', process.execPath, [
