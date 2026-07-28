@@ -1,3 +1,4 @@
+import { PLATFORM_LABELS } from '@threader/core'
 import type { Profile } from '@threader/core'
 import { Avatar } from './Avatar.js'
 
@@ -24,7 +25,10 @@ export function ProfileChip({ profile, onOpen }: Props) {
       type="button"
       className="chip"
       onClick={onOpen}
-      title={`${profile.name} · ${profile.charLimit} characters — click to change`}
+      title={
+        `${profile.name} · ${PLATFORM_LABELS[profile.platform]} · ` +
+        `${profile.charLimit} characters — click to change`
+      }
     >
       <Avatar handle={profile.handle} name={profile.name} platform={profile.platform} />
       <span className="chip__handle">{profile.handle}</span>

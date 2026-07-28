@@ -366,6 +366,7 @@ export function App() {
         {sidebarOpen && (
         <ThreadList
           threads={threads}
+          profiles={profiles}
           currentId={thread.id}
           onSelect={(id) => void selectThread(id)}
           onDelete={(id) => void deleteThread(id)}

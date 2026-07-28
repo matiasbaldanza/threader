@@ -508,6 +508,9 @@ body {
 .sidebar__item {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
   text-align: left;
   border: 0;
   background: transparent;
@@ -523,6 +526,11 @@ body {
   font-weight: 600;
 }
 
+.sidebar__text {
+  min-width: 0;
+  flex: 1;
+}
+
 .sidebar__title {
   display: block;
   font-size: 0.875rem;
@@ -535,6 +543,9 @@ body {
   display: block;
   font-size: 0.75rem;
   color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar__delete {
