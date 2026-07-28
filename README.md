@@ -3,7 +3,7 @@
 A local-first tool for writing X threads: paste your text, let it split and number itself,
 then publish it through a step-by-step wizard that hands you one thing at a time.
 
-**Status: planning.** The spec is written; no code yet.
+**Status: Stage 0.** Workspace scaffolded; the actual splitting logic lands in Stage 1.
 
 ## Why
 
@@ -28,6 +28,24 @@ Threader never posts anything itself.
 - Images, GIFs, and video attached per post
 - A resumable publish wizard — close the tab at post 7, come back, resume at post 7
 - A permanent record of every published post's URL
+
+## Getting started
+
+Requires **Node ≥ 20.10** and **pnpm ≥ 10** — pnpm only, not npm or yarn ([ADR-0008](docs/decisions/0008-pnpm-workspaces.md)).
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Then open http://localhost:5173.
+
+| Command | Does |
+|---|---|
+| `pnpm dev` | Web app on :5173 |
+| `pnpm test` | Vitest across the workspace |
+| `pnpm typecheck` | `tsc --noEmit` in every package |
+| `pnpm build` | Build every package |
 
 ## Documentation
 

@@ -1,0 +1,19 @@
+{
+  "name": "@threader/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.ts",
+    "start": "node src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@threader/core": "workspace:*",
+    "@threader/store": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5"
+  }
+}

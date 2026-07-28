@@ -29,6 +29,23 @@ docs/PLAN.md       the spec
 docs/decisions/    ADRs
 ```
 
+## Tooling
+
+**pnpm only** — never `npm` or `yarn` in this repo (ADR-0008). A stray `npm install`
+creates a second lockfile and breaks the strict `node_modules` layout that keeps `core`
+honest.
+
+```bash
+pnpm install            # all workspace projects
+pnpm dev                # web app on :5173
+pnpm test               # vitest, whole workspace
+pnpm typecheck          # tsc --noEmit, every package
+pnpm --filter @threader/core test   # one package
+```
+
+Internal dependencies use `workspace:*`. A dependency needing an install script must be
+added explicitly to `pnpm.onlyBuiltDependencies` in the root `package.json`.
+
 ## Hard rules
 
 1. **`packages/core` stays pure.** No DOM, no Node APIs, no React, no `fs`, no `window`.

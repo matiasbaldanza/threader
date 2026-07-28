@@ -13,3 +13,4 @@ that supersedes it and mark the old one `Superseded by ADR-NNNN`.
 | [0005](0005-plain-json-files-via-thin-local-server.md) | Plain JSON files on disk, served by a thin local server | Accepted |
 | [0006](0006-pluggable-weighted-character-counting.md) | Character counting is pluggable and platform-weighted | Accepted |
 | [0007](0007-publish-runs-are-resumable-and-persisted.md) | Publish runs are persisted after every step | Accepted |
+| [0008](0008-pnpm-workspaces.md) | pnpm workspaces as the package manager | Accepted |
