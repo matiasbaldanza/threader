@@ -39,6 +39,13 @@ export class HttpStore implements Storage {
     })
   }
 
+  async renameThread(id: string, title: string): Promise<void> {
+    await this.#json(`/threads/${encodeURIComponent(id)}/rename`, {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    })
+  }
+
   async deleteThread(id: string): Promise<void> {
     await this.#json(`/threads/${encodeURIComponent(id)}`, { method: 'DELETE' })
   }

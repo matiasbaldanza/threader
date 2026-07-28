@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   createProfile,
   createThread,
@@ -172,6 +172,36 @@ export function App() {
     [store, thread?.id, open, profile.id],
   )
 
+  /**
+   * Deliberate title edits rename the thread's folder on disk; the title
+   * auto-following the draft's first line does not. Otherwise the folder would churn
+   * through `this/`, `this-is/`, `this-is-the/` as you type an opening sentence.
+   *
+   * Debounced well past the autosave interval so a rename lands once you stop typing,
+   * not once per keystroke.
+   */
+  const renameTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const renameTitle = useCallback(
+    (title: string) => {
+      apply((t) => ({ ...t, title }))
+      const id = thread?.id
+      if (!id) return
+      if (renameTimer.current) clearTimeout(renameTimer.current)
+      renameTimer.current = setTimeout(() => {
+        store.renameThread?.(id, title).catch((error: unknown) => {
+          // The thread itself is safe either way — only its folder name is stale.
+          console.error('folder rename failed', error)
+        })
+      }, 1200)
+    },
+    [apply, store, thread?.id],
+  )
+
+  useEffect(() => () => {
+    if (renameTimer.current) clearTimeout(renameTimer.current)
+  }, [])
+
   const changeSource = useCallback(
     (source: string) => {
       apply((t) => {
@@ -205,7 +235,7 @@ export function App() {
         <input
           className="topbar__title"
           value={thread.title}
-          onChange={(e) => apply((t) => ({ ...t, title: e.target.value }))}
+          onChange={(e) => renameTitle(e.target.value)}
           aria-label="Thread title"
           spellCheck={false}
         />

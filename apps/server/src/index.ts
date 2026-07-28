@@ -84,6 +84,16 @@ const routes: Route[] = [
     },
   },
   {
+    method: 'POST',
+    pattern: /^\/api\/threads\/([^/]+)\/rename$/,
+    handle: async (m, req) => {
+      const { title } = await readBody<{ title?: string }>(req)
+      if (typeof title !== 'string') return [400, { error: 'title required' }]
+      await store.renameThread(decodeURIComponent(m[1]!), title)
+      return [200, { ok: true }]
+    },
+  },
+  {
     method: 'DELETE',
     pattern: /^\/api\/threads\/([^/]+)$/,
     handle: async (m) => {

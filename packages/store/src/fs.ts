@@ -109,6 +109,40 @@ export class FsStore implements Storage {
     this.#dirs.delete(id)
   }
 
+  /**
+   * Renames the thread's folder to match `title`, keeping the original creation date
+   * prefix so the folder still sorts by when the thread was started.
+   *
+   * Called only for deliberate title edits, never for the title auto-following the
+   * draft's first line — otherwise the folder would churn through `this/`,
+   * `this-is/`, `this-is-the/` as you type an opening sentence.
+   */
+  async renameThread(id: string, title: string): Promise<void> {
+    assertSafeId(id)
+    const dir = await this.#dirFor(id)
+    if (!dir) return
+
+    // Keep the date the folder was created with; only the slug part follows the title.
+    const datePrefix = /^(\d{4}-\d{2}-\d{2})-/.exec(dir)?.[1]
+    const date = datePrefix ?? new Date().toISOString().slice(0, 10)
+    const base = `${date}-${slugify(title)}`
+    if (base === dir) return
+
+    let taken: Set<string>
+    try {
+      taken = new Set(await readdir(this.threadsDir))
+    } catch {
+      return
+    }
+    taken.delete(dir)
+
+    let target = base
+    for (let n = 2; taken.has(target); n++) target = `${base}-${n}`
+
+    await rename(resolveWithin(this.threadsDir, dir), resolveWithin(this.threadsDir, target))
+    this.#dirs.set(id, target)
+  }
+
   /** Directory for a thread's assets. Created on demand in Stage 8. */
   async assetsDir(id: string): Promise<string | null> {
     assertSafeId(id)

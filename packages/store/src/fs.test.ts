@@ -106,6 +106,66 @@ describe('FsStore — threads', () => {
     expect(await store.listThreads()).toHaveLength(1)
   })
 
+  it('renames the folder when the title is deliberately changed', async () => {
+    const thread = {
+      ...createThread({ profileId: 'p1', title: 'First name' }, { ids }),
+      createdAt: '2026-07-28T10:00:00.000Z',
+    }
+    await store.putThread(thread)
+    await store.renameThread(thread.id, 'Something else entirely')
+
+    const { readdir } = await import('node:fs/promises')
+    expect(await readdir(join(home, 'threads'))).toEqual([
+      '2026-07-28-something-else-entirely',
+    ])
+    // The thread itself is untouched — only its container moved.
+    expect((await store.getThread(thread.id))?.id).toBe(thread.id)
+  })
+
+  it('keeps the original creation date when renaming', async () => {
+    const thread = {
+      ...createThread({ profileId: 'p1', title: 'Old' }, { ids }),
+      createdAt: '2020-01-02T00:00:00.000Z',
+    }
+    await store.putThread(thread)
+    await store.renameThread(thread.id, 'New title')
+
+    const { readdir } = await import('node:fs/promises')
+    expect(await readdir(join(home, 'threads'))).toEqual(['2020-01-02-new-title'])
+  })
+
+  it('is a no-op when the slug would not change', async () => {
+    const thread = createThread({ profileId: 'p1', title: 'Same Title' }, { ids })
+    await store.putThread(thread)
+    const { readdir } = await import('node:fs/promises')
+    const before = await readdir(join(home, 'threads'))
+
+    await store.renameThread(thread.id, 'same title!')
+
+    expect(await readdir(join(home, 'threads'))).toEqual(before)
+  })
+
+  it('suffixes a rename that would collide with another thread', async () => {
+    const a = { ...createThread({ profileId: 'p', title: 'Taken' }, { ids }), createdAt: '2026-07-28T00:00:00.000Z' }
+    const b = { ...createThread({ profileId: 'p', title: 'Other' }, { ids }), createdAt: '2026-07-28T00:00:00.000Z' }
+    await store.putThread(a)
+    await store.putThread(b)
+
+    await store.renameThread(b.id, 'Taken')
+
+    const { readdir } = await import('node:fs/promises')
+    expect((await readdir(join(home, 'threads'))).sort()).toEqual([
+      '2026-07-28-taken',
+      '2026-07-28-taken-2',
+    ])
+    expect(await store.getThread(a.id)).not.toBeNull()
+    expect(await store.getThread(b.id)).not.toBeNull()
+  })
+
+  it('refuses to rename with an unsafe id', async () => {
+    await expect(store.renameThread('../../x', 'y')).rejects.toThrow(/unsafe/)
+  })
+
   it('does not collide when two threads share a date and title', async () => {
     const a = { ...createThread({ profileId: 'p', title: 'Same' }, { ids }), createdAt: '2026-07-28T00:00:00.000Z' }
     const b = { ...createThread({ profileId: 'p', title: 'Same' }, { ids }), createdAt: '2026-07-28T00:00:00.000Z' }

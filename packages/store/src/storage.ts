@@ -16,6 +16,15 @@ export type Storage = {
   listProfiles(): Promise<Profile[]>
   getProfile(id: string): Promise<Profile | null>
   putProfile(profile: Profile): Promise<void>
+
+  /**
+   * Bring the thread's on-disk name into line with `title`.
+   *
+   * Optional because it only means something to a store with named containers —
+   * MemoryStore has nothing to rename. The title is passed rather than read back so
+   * this does not depend on a save having landed first.
+   */
+  renameThread?(id: string, title: string): Promise<void>
 }
 
 export class MemoryStore implements Storage {
