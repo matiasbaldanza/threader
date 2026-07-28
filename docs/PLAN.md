@@ -126,6 +126,8 @@ type NumberingConfig = {
   separator: string          // "\n\n" for suffix, " " for prefix
   includeFirst: boolean      // some people leave post 1 unnumbered
   includeClosing: boolean
+  endMarker: string          // "EOF" | "FIN" | "" — suffix on the LAST post (§5)
+  endMarkerSeparator: string // " " by default
 }
 
 type ClosingTemplate = {
@@ -205,7 +207,49 @@ red over the limit. The publish button is disabled while any post is over.
 
 ---
 
-## 5. Closing post
+## 5. How a thread ends
+
+Not every thread wants a call to action. A stream-of-thought thread that ends by asking for
+a repost reads like an ad. So "ending" is a per-thread choice between three kinds, drawn
+from profile settings:
+
+| Ending | Adds a post? | For |
+|---|---|---|
+| **Marker** | No | Stream-of-thought. The last post's numbering becomes `12/12 EOF` |
+| **Repost ask** | Yes | The default. Points readers back at post 1 |
+| **Any other CTA** | Yes | Newsletter, follow, product — pre-worded per profile |
+
+The last two are the same mechanism — a closing post built from a template — and are
+described below. The first is not a post at all, which is what makes it different in kind.
+
+### Marker endings
+
+An end marker is a suffix on the **last post's numbering**, not a separate post:
+`12/12 EOF`. The marker is a profile setting (`EOF`, `FIN`, `∎`, `— fin`, whatever you
+like), so it becomes part of an account's voice rather than something retyped per thread.
+
+It belongs in `NumberingConfig` because it is numbering — derived at render time, never
+stored in `Post.text` (ADR-0003). Reorder the thread and the marker follows whichever post
+is now last, which is the whole reason not to type it by hand.
+
+```ts
+type NumberingConfig = {
+  // …
+  /** Appended to the final post's numbering when the thread has no closing post. */
+  endMarker: string        // "EOF" | "FIN" | "" (default)
+  endMarkerSeparator: string   // " " by default
+}
+```
+
+**Watch the budget.** The marker costs characters, and only on the last post — but which
+post is last is not known until splitting has finished, and adding the marker can push that
+post over the limit and cause a further split, which changes which post is last. The
+existing fixpoint loop in `split()` already iterates on total; the marker has to be folded
+into `numberingOverhead` for the final index so it is reserved rather than discovered
+afterwards. Test this specifically: a thread that fits in exactly N posts without a marker
+and N+1 with one.
+
+### Closing posts
 
 Built from a profile template, chosen per thread, editable inline. The default:
 
@@ -221,6 +265,10 @@ with a placeholder chip where the URL will go, and its character count reserves 
 for it.
 
 Other templates worth shipping as defaults: newsletter CTA, follow CTA, recap + repost ask.
+
+A thread has **either** a closing post **or** an end marker, never both — a marker means
+"this is the end", and a closing post already is the end. When a closing post exists, the
+marker is simply not rendered.
 
 ---
 
@@ -367,8 +415,9 @@ autosave. *Commit: local file storage.*
 **Stage 5 — Profiles, minimal.** Char limit + numbering config + handle. Profile picker on
 each thread. *Commit: profiles.*
 
-**Stage 6 — Closing post.** Templates on the profile, per-thread selection, placeholder
-rendering with its 23-char reservation. *Commit: closing post templates.*
+**Stage 6 — Endings.** The three ending kinds (§5): end markers in `NumberingConfig` with
+their budget reservation, closing-post templates on the profile, per-thread selection, and
+placeholder rendering with its 23-char reservation. *Commit: thread endings.*
 
 **Stage 7 — The publish wizard.** `Publisher` interface, `ManualPublisher`, step machine,
 clipboard, URL capture and validation, resumable `publishRun`, summary screen.
