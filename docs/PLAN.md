@@ -412,7 +412,7 @@ flag and its confirm dialog, per-card counters. *Commit: manual split editing.*
 **Stage 4 — Persistence.** ✅ `Storage` interface, `FsStore`, the server, thread list,
 autosave. *Commit: local file storage.*
 
-**Stage 5 — Profiles, minimal.** Char limit + numbering config + handle. Profile picker on
+**Stage 5 — Profiles, minimal.** ✅ Char limit + numbering config + handle. Profile picker on
 each thread. *Commit: profiles.*
 
 **Stage 6 — Endings.** The three ending kinds (§5): end markers in `NumberingConfig` with

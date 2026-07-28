@@ -17,6 +17,8 @@ import type { Profile, Thread } from '@threader/core'
 import { ComposeView } from './compose/ComposeView.js'
 import { ArrangeView } from './arrange/ArrangeView.js'
 import { HelpCard } from './HelpCard.js'
+import { ProfileCard } from './ProfileCard.js'
+import { ProfileChip } from './ProfileChip.js'
 import { ThreadList } from './ThreadList.js'
 import { HttpStore } from './storage/httpStore.js'
 import { useLocalPref } from './useLocalPref.js'
@@ -39,17 +41,27 @@ const FALLBACK_PROFILE = createProfile(
 export function App() {
   const store = useMemo(() => new HttpStore(), [])
 
-  const [profile, setProfile] = useState<Profile>(FALLBACK_PROFILE)
+  const [profiles, setProfiles] = useState<Profile[]>([FALLBACK_PROFILE])
   const [threads, setThreads] = useState<Thread[]>([])
   const [thread, setThread] = useState<Thread | null>(null)
   const [history, setHistory] = useState<Thread[]>([])
   const [mode, setMode] = useState<Mode>('compose')
-  const [showCounts, setShowCounts] = useState(false)
+  // On by default: the ring shows the proportion, but the number is what you act on
+  // — and with the limit no longer in the top bar, "243/280" is where it now lives.
+  const [showCounts, setShowCounts] = useLocalPref('showCounts', true)
   const [sidebarOpen, setSidebarOpen] = useLocalPref('sidebarOpen', true)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { state: saveState, markSaved } = useAutosave(thread, store)
+
+  /**
+   * The thread names its profile, so switching profiles is a per-thread choice and a
+   * deleted profile degrades to the first one rather than breaking the thread.
+   */
+  const profile =
+    profiles.find((p) => p.id === thread?.profileId) ?? profiles[0] ?? FALLBACK_PROFILE
 
   const reflowOptions = useMemo(
     () => ({ charLimit: profile.charLimit, numbering: profile.numbering }),
@@ -85,7 +97,7 @@ export function App() {
           store.listThreads(),
         ])
         if (cancelled) return
-        if (profiles[0]) setProfile(profiles[0])
+        if (profiles.length > 0) setProfiles(profiles)
         setThreads(list)
         if (list[0]) {
           setThread(list[0])
@@ -202,6 +214,28 @@ export function App() {
     if (renameTimer.current) clearTimeout(renameTimer.current)
   }, [])
 
+  /**
+   * Changing a profile's limit or numbering changes where the splits belong, so an
+   * attached thread re-splits to match. Without this, compose mode quietly breaks its
+   * own promise that posts follow the draft: you would drop the limit to 120 and be
+   * left with a single post 39 characters over, with nothing to tell you why.
+   *
+   * Detached threads are left alone — their posts are hand-arranged, and silently
+   * re-packing them is exactly the data loss ADR-0004 exists to prevent. They show as
+   * over-limit instead, and Tidy re-packs on request.
+   */
+  const optionsKey = JSON.stringify(reflowOptions)
+  const lastOptions = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (lastOptions.current === null || lastOptions.current === optionsKey) {
+      lastOptions.current = optionsKey
+      return
+    }
+    lastOptions.current = optionsKey
+    apply((t) => (t.detached ? t : resplitFromSource(t, reflowOptions)))
+  }, [optionsKey, reflowOptions, apply])
+
   const changeSource = useCallback(
     (source: string) => {
       apply((t) => {
@@ -212,6 +246,38 @@ export function App() {
       })
     },
     [apply, reflowOptions],
+  )
+
+  const saveProfile = useCallback(
+    (next: Profile) => {
+      setProfiles((list) => list.map((p) => (p.id === next.id ? next : p)))
+      store.putProfile(next).catch((e: unknown) => console.error('profile save failed', e))
+    },
+    [store],
+  )
+
+  const createProfileEntry = useCallback(() => {
+    const fresh = createProfile({ name: 'New profile', handle: '@handle' })
+    setProfiles((list) => [...list, fresh])
+    store.putProfile(fresh).catch((e: unknown) => console.error('profile save failed', e))
+    if (thread) apply((t) => ({ ...t, profileId: fresh.id }))
+  }, [store, thread, apply])
+
+  const removeProfile = useCallback(
+    async (id: string) => {
+      try {
+        await store.deleteProfile(id)
+      } catch (e) {
+        console.error('profile delete failed', e)
+        return
+      }
+      const remaining = await store.listProfiles()
+      setProfiles(remaining.length > 0 ? remaining : [FALLBACK_PROFILE])
+      if (thread?.profileId === id && remaining[0]) {
+        apply((t) => ({ ...t, profileId: remaining[0]!.id }))
+      }
+    },
+    [store, thread?.profileId, apply],
   )
 
   if (!thread) {
@@ -232,6 +298,12 @@ export function App() {
           {sidebarOpen ? '\u2337' : '\u2338'}
         </button>
         <h1>Threader</h1>
+
+        {/* profile / title — the profile scopes the thread, so it reads as a path. */}
+        <ProfileChip profile={profile} onOpen={() => setProfileOpen(true)} />
+        <span className="topbar__sep" aria-hidden="true">
+          /
+        </span>
         <input
           className="topbar__title"
           value={thread.title}
@@ -325,6 +397,18 @@ export function App() {
       </div>
 
       {helpOpen && <HelpCard onClose={() => setHelpOpen(false)} />}
+
+      {profileOpen && (
+        <ProfileCard
+          profiles={profiles}
+          selectedId={profile.id}
+          onSelect={(id) => apply((t) => ({ ...t, profileId: id }))}
+          onChange={saveProfile}
+          onCreate={createProfileEntry}
+          onDelete={(id) => void removeProfile(id)}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
     </div>
   )
 }

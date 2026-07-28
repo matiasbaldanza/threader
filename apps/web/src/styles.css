@@ -54,6 +54,14 @@ body {
   margin: 0;
   font-size: 1rem;
   letter-spacing: -0.01em;
+  flex: 0 0 auto;
+}
+
+/* The chip and title earn the space before the wordmark does. */
+@media (max-width: 1000px) {
+  .topbar h1 {
+    display: none;
+  }
 }
 
 .topbar__profile {
@@ -155,6 +163,24 @@ body {
   font-size: 1.0625rem;
 }
 
+/* The profile drawer reuses .help, so these must come after it to win. */
+.scrim--right {
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.drawer {
+  max-width: 26rem;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  box-shadow: -12px 0 40px rgb(0 0 0 / 18%);
+}
+
 .help h3 {
   margin: 1.5rem 0 0.5rem;
   font-size: 0.75rem;
@@ -239,12 +265,135 @@ body {
   font-size: 0.8125rem;
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
 }
 
 .toggle input {
   accent-color: var(--accent);
   margin: 0;
   cursor: pointer;
+}
+
+/* ── Profile chip ──────────────────────────────────────────── */
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 0.15rem 0.5rem 0.15rem 0.15rem;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.chip:hover {
+  border-color: var(--line);
+}
+
+.chip__handle {
+  white-space: nowrap;
+}
+
+.topbar__sep {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: hsl(var(--avatar-hue) 55% 45%);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.avatar__badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  font-size: 0.5rem;
+  font-weight: 700;
+}
+
+/* ── Profile card ──────────────────────────────────────────── */
+
+.profile__switcher {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 0 0.25rem;
+}
+
+.profile__switcher select {
+  flex: 1;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.field label {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.field input,
+.field select,
+.profile__switcher select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 0.3rem 0.45rem;
+  min-width: 0;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 0;
+  border-color: var(--accent);
+}
+
+.toggle--row {
+  margin-bottom: 0.375rem;
+}
+
+.profile__preview {
+  margin: 0 0 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* ── Workspace: sidebar + panes ────────────────────────────── */

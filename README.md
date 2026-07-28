@@ -3,8 +3,9 @@
 A local-first tool for writing X threads: paste your text, let it split and number itself,
 then publish it through a step-by-step wizard that hands you one thing at a time.
 
-**Status: Stage 4.** Threads live on disk as plain JSON under `~/threader/` and save
-themselves as you type. Compose, arrange, and a thread list all work. Profiles are next.
+**Status: Stage 5.** Threads live on disk under `~/threader/` and save themselves as you
+type. Compose, arrange, a thread list, and per-account profiles all work. Endings — the
+closing post and `EOF`-style markers — are next.
 
 ## Why
 
@@ -90,7 +91,18 @@ go stale. Reorder, split or merge freely and `1/9` fixes itself.
 would wipe out the edits you just made by hand. You can rebuild the posts from the draft
 whenever you like — Threader asks first, because it throws those edits away.
 
-**⌘Z undoes anything**, including a deleted post.
+**⌘Z undoes anything**, including a deleted post. **⌘\** hides the thread list.
+
+### Profiles
+
+Each account gets a profile: handle, platform, character limit, and numbering style
+(`1/12`, `🧵1/12`, `1.`, or none — before or after the post). Open it from the button in
+the top bar showing the current profile and limit.
+
+Each thread points at a profile, so you can keep one account on X's 280 and another on
+Mastodon's 500. Changing a profile's limit or numbering re-splits any thread that still
+follows its draft; threads you have arranged by hand are left alone and simply flag
+anything now over the limit.
 
 ## Running the tests
 
