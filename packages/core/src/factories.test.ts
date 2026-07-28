@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createPost, createProfile, createThread, deriveTitle } from './factories.js'
+import {
+  createPost,
+  createProfile,
+  createThread,
+  defaultNumbering,
+  deriveTitle,
+  withProfileDefaults,
+} from './factories.js'
 
 const ids = () => 'fixed-id'
 const clock = () => '2026-07-27T00:00:00.000Z'
@@ -57,5 +64,34 @@ describe('deriveTitle', () => {
 
   it('falls back for an empty draft', () => {
     expect(deriveTitle('   \n\n ')).toBe('Untitled thread')
+  })
+})
+
+describe('withProfileDefaults', () => {
+  it('fills in settings a profile saved by an older version lacks', () => {
+    // A file written before end markers existed: the key is simply absent, and
+    // undefined reads as "off" everywhere downstream.
+    const stored = {
+      ...createProfile({ name: 'Old', handle: '@old' }, { ids }),
+      numbering: {
+        format: '{n}/{total}',
+        position: 'suffix',
+        separator: '\n\n',
+        includeFirst: true,
+        includeClosing: false,
+      },
+    } as never
+
+    const profile = withProfileDefaults(stored)
+    expect(profile.numbering.endMarker).toBe('')
+    expect(profile.numbering.endMarkerSeparator).toBe(' ')
+  })
+
+  it('does not overwrite settings that are present', () => {
+    const profile = withProfileDefaults({
+      ...createProfile({ name: 'New', handle: '@new' }, { ids }),
+      numbering: { ...defaultNumbering, endMarker: 'FIN' },
+    })
+    expect(profile.numbering.endMarker).toBe('FIN')
   })
 })

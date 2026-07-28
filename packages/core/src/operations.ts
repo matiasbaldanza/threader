@@ -1,6 +1,6 @@
 import { createPost, type Clock, type Ids } from './factories.js'
 import { split, type SplitOptions } from './split.js'
-import type { AssetRef, Post, Thread } from './types.js'
+import type { AssetRef, ClosingTemplate, Post, Thread } from './types.js'
 
 /**
  * Arrange-mode operations (docs/PLAN.md §4, ADR-0004).
@@ -211,6 +211,46 @@ export function reflowFrom(
     ...thread.posts.slice(end),
   ]
   return commit(thread, posts, { detach: true, clock: ctx.clock ?? defaultClock })
+}
+
+/**
+ * Gives the thread a closing post, from a profile template.
+ *
+ * Does not detach: a closing post is a separate post appended to the thread, not an
+ * edit to the hand-arranged ones, so the draft can keep driving the body.
+ */
+export function setClosing(
+  thread: Thread,
+  template: ClosingTemplate | null,
+  ctx: OpContext = {},
+): Thread {
+  const clock = ctx.clock ?? defaultClock
+  if (!template) return { ...thread, closing: null, updatedAt: clock() }
+  return {
+    ...thread,
+    closing: {
+      templateId: template.id,
+      text: template.body,
+      assets: thread.closing?.assets ?? [],
+      published: thread.closing?.published ?? null,
+    },
+    updatedAt: clock(),
+  }
+}
+
+/** Editing the closing post's wording, which detaches it from its template. */
+export function setClosingText(
+  thread: Thread,
+  text: string,
+  ctx: OpContext = {},
+): Thread {
+  if (!thread.closing) return thread
+  const clock = ctx.clock ?? defaultClock
+  return {
+    ...thread,
+    closing: { ...thread.closing, text, templateId: null },
+    updatedAt: clock(),
+  }
 }
 
 /**

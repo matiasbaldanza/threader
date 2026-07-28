@@ -75,6 +75,13 @@ export type NumberingConfig = {
   /** Some people leave post 1 unnumbered. */
   includeFirst: boolean
   includeClosing: boolean
+  /**
+   * Appended to the FINAL post's numbering — "12/12 EOF" — for threads that simply
+   * stop rather than asking the reader for anything. Not rendered when the thread has
+   * a closing post: a closing post already is the ending.
+   */
+  endMarker: string
+  endMarkerSeparator: string
 }
 
 export type ClosingTemplate = {

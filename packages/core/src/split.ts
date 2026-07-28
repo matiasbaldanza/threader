@@ -247,9 +247,15 @@ export function split(source: string, opts: SplitOptions): string[] {
   const pack = (local: number): string[] => {
     const total = otherPosts + local
     const posts: string[] = []
-    const budgetAt = (index: number) =>
-      opts.charLimit -
-      numberingOverhead({ index: startIndex + index, total }, numbering, count)
+    const budgetAt = (index: number) => {
+      const absolute = startIndex + index
+      // The end marker only costs the final post, and which post is final is not
+      // known until packing finishes — reserving it here rather than appending it
+      // afterwards is what keeps that post inside the limit. The fixpoint below
+      // handles the case where reserving it forces one more post.
+      const slot = { index: absolute, total, isLast: absolute === total - 1 }
+      return opts.charLimit - numberingOverhead(slot, numbering, count)
+    }
     for (const tokens of segments) {
       packSegment(
         tokens.map((t) => ({ ...t })),
@@ -260,6 +266,49 @@ export function split(source: string, opts: SplitOptions): string[] {
       )
     }
     return posts
+  }
+
+  /** Does the actual final post fit once the end marker is charged to it? */
+  const lastFits = (list: string[]): boolean => {
+    const text = list[list.length - 1]
+    if (!text) return true
+    const total = otherPosts + list.length
+    const slot = { index: total - 1, total, isLast: true }
+    return count(text) <= opts.charLimit - numberingOverhead(slot, numbering, count)
+  }
+
+  /**
+   * The end marker is charged to whichever post turns out to be last — but that is
+   * only known once packing has finished, and the fixpoint's assumed count can differ
+   * from what it produced. When it does, the real final post was budgeted as an
+   * ordinary one and the marker pushes it over.
+   *
+   * So repair it: re-pack that post alone against the correct final-post budget. Each
+   * pass strictly shortens the last post, so this terminates, and it costs at most one
+   * extra post rather than charging every post for a marker only one of them carries.
+   */
+  const repairLast = (list: string[]): string[] => {
+    let result = list
+    for (let guard = 0; guard < 4 && !lastFits(result); guard++) {
+      const lastText = result[result.length - 1]!
+      const startAbsolute = otherPosts + result.length - 1
+      const assumedTotal = otherPosts + result.length + 1
+      // Every post in the repaired tail is costed as if it were the final one. Which
+      // of them ends up last is not knowable until packing finishes, and this is the
+      // one place where guessing wrong puts a post over the limit. The pessimism is
+      // confined to the tail — one or two posts — rather than the whole thread.
+      const budgetAt = (index: number) => {
+        const slot = { index: startAbsolute + index, total: assumedTotal, isLast: true }
+        return opts.charLimit - numberingOverhead(slot, numbering, count)
+      }
+
+      const tail: string[] = []
+      packSegment(tokenize(lastText), tail, budgetAt, count, minFill)
+      // Nothing left to break apart — accept rather than loop forever.
+      if (tail.length <= 1) return result
+      result = [...result.slice(0, -1), ...tail]
+    }
+    return result
   }
 
   let local = Math.max(1, segments.length)
@@ -277,5 +326,5 @@ export function split(source: string, opts: SplitOptions): string[] {
     posts = pack(local)
   }
 
-  return posts
+  return repairLast(posts)
 }

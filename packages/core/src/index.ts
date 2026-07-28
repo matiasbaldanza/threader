@@ -7,6 +7,7 @@ export {
   defaultNumbering,
   deriveTitle,
   isBlankThread,
+  withProfileDefaults,
   type Clock,
   type Ids,
 } from './factories.js'
@@ -30,6 +31,13 @@ export {
   type CharCounter,
   type UrlMatch,
 } from './count.js'
+
+export {
+  needsUrl,
+  PLACEHOLDER_URL,
+  resolveTemplate,
+  type TemplateVars,
+} from './templates.js'
 
 export {
   applyNumbering,
@@ -59,6 +67,8 @@ export {
   reflowFrom,
   removePost,
   resplitFromSource,
+  setClosing,
+  setClosingText,
   setLocked,
   setPostText,
   setSource,

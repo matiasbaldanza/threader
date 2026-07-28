@@ -239,3 +239,53 @@ describe('split — weighted counting in practice', () => {
     expect(posts).toHaveLength(1)
   })
 })
+
+describe('split — end markers', () => {
+  const marked = (over: Partial<NumberingConfig> = {}) => cfg({ endMarker: 'EOF', ...over })
+
+  /** Like expectAllFit, but marks the final post so the marker is counted. */
+  function expectAllFitWithMarker(posts: string[], charLimit: number, numbering: NumberingConfig) {
+    posts.forEach((text, index) => {
+      const rendered = applyNumbering(
+        text,
+        { index, total: posts.length, isLast: index === posts.length - 1 },
+        numbering,
+      )
+      expect(countX(rendered), `post ${index + 1}: ${JSON.stringify(rendered)}`)
+        .toBeLessThanOrEqual(charLimit)
+    })
+  }
+
+  it('reserves the marker on the last post', () => {
+    const numbering = marked()
+    const source = Array.from({ length: 40 }, (_, i) => `word${i}`).join(' ')
+    const posts = split(source, { charLimit: 100, numbering })
+    expectAllFitWithMarker(posts, 100, numbering)
+  })
+
+  it('lets the marker force one more post, and follows it there', () => {
+    // Sized so the text fits exactly without a marker. Reserving " EOF" on the final
+    // post must push one word out — and the marker then belongs to the NEW last post,
+    // which is the part a naive "append afterwards" implementation gets wrong.
+    const numbering = marked()
+    const source = Array.from({ length: 30 }, (_, i) => `w${i}`).join(' ')
+
+    const without = split(source, { charLimit: 60, numbering: cfg() })
+    const with_ = split(source, { charLimit: 60, numbering })
+
+    expect(with_.length).toBeGreaterThanOrEqual(without.length)
+    expectAllFitWithMarker(with_, 60, numbering)
+  })
+
+  it('does not charge the marker to every post', () => {
+    const numbering = marked({ endMarker: 'THE END OF THE THREAD' })
+    const source = Array.from({ length: 60 }, (_, i) => `word${i}`).join(' ')
+    const posts = split(source, { charLimit: 120, numbering })
+
+    expectAllFitWithMarker(posts, 120, numbering)
+    // Only the last post pays for it, so earlier posts stay fuller than it.
+    const last = countX(posts[posts.length - 1]!)
+    const first = countX(posts[0]!)
+    expect(first).toBeGreaterThan(last - 21)
+  })
+})

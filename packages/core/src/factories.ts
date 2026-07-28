@@ -17,6 +17,8 @@ export const defaultNumbering: NumberingConfig = {
   separator: '\n\n',
   includeFirst: true,
   includeClosing: false,
+  endMarker: '',
+  endMarkerSeparator: ' ',
 }
 
 export function createPost(
@@ -76,6 +78,24 @@ export function isBlankThread(thread: Thread): boolean {
     thread.posts.length === 0 &&
     thread.closing === null
   )
+}
+
+/**
+ * Fills in fields a profile saved by an older version does not have.
+ *
+ * Profiles are plain JSON on disk (ADR-0005), so a file written before a setting
+ * existed simply lacks the key — and `undefined` silently reads as "off". That is how
+ * an end marker can be configured, saved, and still never appear. Applied on read so
+ * every surface sees a complete profile.
+ */
+export function withProfileDefaults(profile: Profile): Profile {
+  return {
+    ...profile,
+    numbering: { ...defaultNumbering, ...profile.numbering },
+    closingTemplates: profile.closingTemplates ?? [],
+    style: profile.style ?? {},
+    libraryPath: profile.libraryPath ?? null,
+  }
 }
 
 export function createProfile(

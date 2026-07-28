@@ -85,3 +85,36 @@ describe('numberingOverhead', () => {
     expect(numberingOverhead({ index: 0, total: 5 }, c, countX)).toBe(0)
   })
 })
+
+describe('end markers', () => {
+  const marked = (over: Partial<NumberingConfig> = {}) => cfg({ endMarker: 'EOF', ...over })
+
+  it('appends to the last post only', () => {
+    expect(applyNumbering('a', { index: 0, total: 3 }, marked())).toBe('a\n\n1/3')
+    expect(applyNumbering('c', { index: 2, total: 3, isLast: true }, marked())).toBe(
+      'c\n\n3/3 EOF',
+    )
+  })
+
+  it('stands alone when there is no numbering', () => {
+    const c = marked({ format: '' })
+    expect(applyNumbering('c', { index: 2, total: 3, isLast: true }, c)).toBe('c\n\nEOF')
+  })
+
+  it('is suppressed on a closing post — that already is the ending', () => {
+    const slot = { index: 3, total: 3, isClosing: true, isLast: true }
+    expect(applyNumbering('repost pls', slot, marked())).toBe('repost pls')
+  })
+
+  it('honours a custom separator', () => {
+    const c = marked({ endMarker: 'FIN', endMarkerSeparator: ' — ' })
+    expect(applyNumbering('c', { index: 1, total: 2, isLast: true }, c)).toBe('c\n\n2/2 — FIN')
+  })
+
+  it('costs characters only on the last post', () => {
+    const c = marked()
+    const middle = numberingOverhead({ index: 0, total: 3 }, c, countX)
+    const last = numberingOverhead({ index: 2, total: 3, isLast: true }, c, countX)
+    expect(last).toBe(middle + 4) // " EOF"
+  })
+})
