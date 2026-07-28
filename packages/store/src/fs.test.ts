@@ -234,6 +234,26 @@ describe('FsStore — profiles', () => {
     expect(await store.listProfiles()).toHaveLength(1)
   })
 
+  it('deletes a profile', async () => {
+    const a = createProfile({ name: 'Main', handle: '@me' }, { ids })
+    const b = createProfile({ name: 'Work', handle: '@work' }, { ids })
+    await store.putProfile(a)
+    await store.putProfile(b)
+
+    await store.deleteProfile(a.id)
+
+    expect(await store.getProfile(a.id)).toBeNull()
+    expect((await store.listProfiles()).map((p) => p.name)).toEqual(['Work'])
+  })
+
+  it('ignores deleting a profile that is not there', async () => {
+    await expect(store.deleteProfile('nope')).resolves.toBeUndefined()
+  })
+
+  it('refuses to delete with an unsafe id', async () => {
+    await expect(store.deleteProfile('../../x')).rejects.toThrow(/unsafe/)
+  })
+
   it('reuses the same file when a profile is renamed', async () => {
     const profile = createProfile({ name: 'Main', handle: '@me' }, { ids })
     await store.putProfile(profile)

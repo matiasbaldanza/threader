@@ -12,6 +12,13 @@ export {
 } from './factories.js'
 
 export {
+  NUMBERING_SEPARATORS,
+  PLATFORM_LABELS,
+  PLATFORM_LIMITS,
+  PLATFORMS,
+} from './platforms.js'
+
+export {
   containsUrl,
   countBluesky,
   countMastodon,

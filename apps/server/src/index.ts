@@ -117,6 +117,18 @@ const routes: Route[] = [
       return [200, { ok: true }]
     },
   },
+  {
+    method: 'DELETE',
+    pattern: /^\/api\/profiles\/([^/]+)$/,
+    handle: async (m) => {
+      const id = decodeURIComponent(m[1]!)
+      // Refusing to delete the last profile keeps threads pointing at something real.
+      const all = await store.listProfiles()
+      if (all.length <= 1) return [409, { error: 'cannot delete the only profile' }]
+      await store.deleteProfile(id)
+      return [200, { ok: true }]
+    },
+  },
 ]
 
 const server = createServer((req, res) => {

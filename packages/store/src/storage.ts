@@ -16,6 +16,7 @@ export type Storage = {
   listProfiles(): Promise<Profile[]>
   getProfile(id: string): Promise<Profile | null>
   putProfile(profile: Profile): Promise<void>
+  deleteProfile(id: string): Promise<void>
 
   /**
    * Bring the thread's on-disk name into line with `title`.
@@ -57,5 +58,9 @@ export class MemoryStore implements Storage {
 
   async putProfile(profile: Profile): Promise<void> {
     this.#profiles.set(profile.id, profile)
+  }
+
+  async deleteProfile(id: string): Promise<void> {
+    this.#profiles.delete(id)
   }
 }

@@ -65,4 +65,8 @@ export class HttpStore implements Storage {
       body: JSON.stringify(profile),
     })
   }
+
+  async deleteProfile(id: string): Promise<void> {
+    await this.#json(`/profiles/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
 }

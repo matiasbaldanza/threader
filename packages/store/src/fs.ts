@@ -212,6 +212,13 @@ export class FsStore implements Storage {
     await writeJsonAtomic(resolveWithin(this.profilesDir, file), profile)
   }
 
+  async deleteProfile(id: string): Promise<void> {
+    assertSafeId(id)
+    const file = await this.#profileFile(id)
+    if (!file) return
+    await rm(resolveWithin(this.profilesDir, file), { force: true })
+  }
+
   async #profileFile(id: string): Promise<string | null> {
     let entries: string[]
     try {
