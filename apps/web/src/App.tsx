@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  abandonPublish,
   createProfile,
   createThread,
   deriveTitle,
@@ -7,6 +8,9 @@ import {
   movePost,
   reflowFrom,
   removePost,
+  isPublishing,
+  publishBlockedReason,
+  recordPublished,
   resplitFromSource,
   setClosing,
   setClosingText,
@@ -14,6 +18,8 @@ import {
   setPostText,
   setSource,
   splitPost,
+  startPublish,
+  stepBack,
 } from '@threader/core'
 import type { ClosingTemplate, Profile, Thread } from '@threader/core'
 import { ComposeView } from './compose/ComposeView.js'
@@ -21,6 +27,7 @@ import { ArrangeView } from './arrange/ArrangeView.js'
 import { HelpCard } from './HelpCard.js'
 import { ProfileCard } from './ProfileCard.js'
 import { ProfileChip } from './ProfileChip.js'
+import { PublishWizard } from './PublishWizard.js'
 import { ThreadList } from './ThreadList.js'
 import { HttpStore } from './storage/httpStore.js'
 import { useLocalPref } from './useLocalPref.js'
@@ -54,6 +61,7 @@ export function App() {
   const [sidebarOpen, setSidebarOpen] = useLocalPref('sidebarOpen', true)
   const [helpOpen, setHelpOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { state: saveState, markSaved } = useAutosave(thread, store)
@@ -90,6 +98,8 @@ export function App() {
     })
   }, [profile.id])
 
+  const [loadAttempt, setLoadAttempt] = useState(0)
+
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -108,11 +118,13 @@ export function App() {
           setThread(createThread({ profileId: profiles[0]?.id ?? FALLBACK_PROFILE.id }))
         }
       } catch (e) {
+        // Deliberately NOT falling back to a blank thread. Autosave would then write
+        // it to disk as a brand new thread, sitting alongside the real ones that
+        // failed to load — a confusing mess produced by a transient network error.
         if (!cancelled) {
           setError(
-            'Cannot reach the local server. Start it with `pnpm dev`, which runs both.',
+            'Cannot reach the local server on :5174. Start it with `pnpm dev`, which runs both.',
           )
-          setThread(createThread({ profileId: FALLBACK_PROFILE.id }))
         }
         console.error(e)
       }
@@ -120,7 +132,7 @@ export function App() {
     return () => {
       cancelled = true
     }
-  }, [store, markSaved])
+  }, [store, markSaved, loadAttempt])
 
   /** Keeps the sidebar in step with the thread being edited. */
   useEffect(() => {
@@ -283,8 +295,32 @@ export function App() {
   )
 
   if (!thread) {
-    return <div className="app loading">Loading…</div>
+    return (
+      <div className="app loading">
+        {error ? (
+          <>
+            <p className="banner banner--error">{error}</p>
+            <p className="notice__actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setError(null)
+                  setLoadAttempt((n) => n + 1)
+                }}
+              >
+                Try again
+              </button>
+            </p>
+          </>
+        ) : (
+          'Loading…'
+        )}
+      </div>
+    )
   }
+
+  const blockedReason = publishBlockedReason(thread, profile)
 
   return (
     <div className="app">
@@ -332,6 +368,18 @@ export function App() {
           <SaveIndicator state={saveState} />
           <button type="button" className="ghost" onClick={newThread} title="New thread">
             New
+          </button>
+          <button
+            type="button"
+            className="ghost primary"
+            onClick={() => {
+              if (!isPublishing(thread)) apply((t) => startPublish(t))
+              setWizardOpen(true)
+            }}
+            disabled={blockedReason !== null}
+            title={blockedReason ?? 'Publish this thread, one post at a time'}
+          >
+            {isPublishing(thread) ? 'Resume' : 'Publish'}
           </button>
           <button
             type="button"
@@ -408,6 +456,16 @@ export function App() {
       </div>
 
       {helpOpen && <HelpCard onClose={() => setHelpOpen(false)} />}
+
+      {wizardOpen && (
+        <PublishWizard
+          thread={thread}
+          profile={profile}
+          onRecord={(url) => apply((t) => recordPublished(t, url))}
+          onBack={() => apply((t) => stepBack(t))}
+          onClose={() => setWizardOpen(false)}
+        />
+      )}
 
       {profileOpen && (
         <ProfileCard
