@@ -19,8 +19,14 @@ export type AssetRef = {
 }
 
 export type PublishedRef = {
-  url: string
+  /** When it went out. Always known once a step is done. */
   at: string
+  /**
+   * Only captured where it is actually needed — post 1, when the closing post links
+   * back to it. Asking for a URL after every post is a dozen tab switches to collect
+   * data nothing reads.
+   */
+  url?: string
 }
 
 export type Post = {

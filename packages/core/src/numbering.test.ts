@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { countX } from './count.js'
-import { defaultNumbering } from './factories.js'
+import { createProfile, createThread, defaultNumbering } from './factories.js'
+import { PLACEHOLDER_URL } from './templates.js'
 import {
   applyNumbering,
   numberingApplies,
   numberingOverhead,
   renderNumbering,
+  renderThread,
 } from './numbering.js'
-import type { NumberingConfig } from './types.js'
+import type { NumberingConfig, Thread } from './types.js'
 
 const cfg = (over: Partial<NumberingConfig> = {}): NumberingConfig => ({
   ...defaultNumbering,
@@ -116,5 +118,39 @@ describe('end markers', () => {
     const middle = numberingOverhead({ index: 0, total: 3 }, c, countX)
     const last = numberingOverhead({ index: 2, total: 3, isLast: true }, c, countX)
     expect(last).toBe(middle + 4) // " EOF"
+  })
+})
+
+describe('closing post placeholders', () => {
+  const profile = {
+    ...createProfile({ name: 'Main', handle: '@me' }, { ids: () => 'p1' }),
+    numbering: cfg(),
+  }
+
+  const withClosing = (over: Partial<Thread> = {}): Thread => ({
+    ...createThread({ profileId: 'p1', title: 'T' }, { ids: () => 'i', clock: () => 'now' }),
+    posts: [{ id: 'p', text: 'body', assets: [], locked: false, published: null }],
+    closing: { templateId: 't', text: 'repost {{url}}', assets: [], published: null },
+    ...over,
+  })
+
+  it('stands in for the URL before publishing', () => {
+    const closing = renderThread(withClosing(), profile).find((p) => p.isClosing)
+    expect(closing?.text).toContain(PLACEHOLDER_URL)
+  })
+
+  it("resolves to post 1's URL, not the closing post's own", () => {
+    // The closing post is published LAST, so reading its own URL would leave the
+    // repost ask pointing at a placeholder forever.
+    const thread = withClosing({
+      publishRun: {
+        startedAt: 'now',
+        cursor: 1,
+        firstPostUrl: 'https://x.com/me/status/111',
+        completedAt: null,
+      },
+    })
+    const closing = renderThread(thread, profile).find((p) => p.isClosing)
+    expect(closing?.text).toBe('repost https://x.com/me/status/111')
   })
 })

@@ -126,7 +126,11 @@ export function renderThread(thread: Thread, profile: Profile): RenderedPost[] {
     // Placeholders resolve for display and for counting; {{url}} stands in as a real
     // URL so it costs the 23 characters it will cost once published.
     const resolved = resolveTemplate(thread.closing.text, {
-      url: thread.closing.published?.url ?? null,
+      // {{url}} means "the link to post 1" — that is the whole point of the repost
+      // ask. Reading the closing post's own URL here would resolve it to a
+      // placeholder forever, since the closing post is published last.
+      url:
+        thread.publishRun?.firstPostUrl ?? thread.posts[0]?.published?.url ?? null,
       handle: profile.handle,
       count: thread.posts.length,
       title: thread.title,

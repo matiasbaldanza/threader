@@ -60,6 +60,22 @@ export {
 } from './split.js'
 
 export {
+  abandonPublish,
+  currentStep,
+  isPublishing,
+  needsFirstPostUrl,
+  parseStatusUrl,
+  publishBlockedReason,
+  recordPublished,
+  skipStep,
+  startPublish,
+  stepBack,
+  stepCount,
+  type PublishStep,
+  type StatusUrl,
+} from './publish.js'
+
+export {
   joinBodies,
   mergePosts,
   movePost,
