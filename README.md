@@ -3,9 +3,9 @@
 A local-first tool for writing X threads: paste your text, let it split and number itself,
 then publish it through a step-by-step wizard that hands you one thing at a time.
 
-**Status: Stage 6.** Threads live on disk under `~/threader/` and save themselves as you
-type. Compose, arrange, a thread list, per-account profiles, and thread endings all work.
-The publish wizard is next — the payoff stage.
+**Status: Stage 7 — the payoff stage.** Write a thread, and publish it through a wizard
+that hands you one post at a time, already on the clipboard, and takes the URL back before
+moving on. Close the tab mid-thread and it resumes where you stopped. Assets are next.
 
 ## Why
 
@@ -107,6 +107,17 @@ an ad. So each thread picks one of two endings:
 The two are alternatives. A closing post already is the ending, so the marker never
 appears alongside one.
 
+### Publishing
+
+Press **Publish**. The wizard shows one post at a time with its text already on your
+clipboard, you post it yourself, and you paste the resulting URL back before it moves on.
+Threader never posts anything — it prepares the next thing and waits.
+
+The first URL is the one the closing post links back to, which is what sends readers to
+the top of the thread instead of the middle. Every step is saved as it happens, so closing
+the tab at post 7 and coming back resumes at post 7, and you end up with a permanent record
+of every post's URL.
+
 ### Profiles
 
 Each account gets a profile: handle, platform, character limit, and numbering style
@@ -200,6 +211,7 @@ pnpm vitest run packages/core
 
 - [docs/PLAN.md](docs/PLAN.md) — the spec: data model, splitting algorithm, wizard flow, build stages
 - [docs/decisions/](docs/decisions/README.md) — ADRs recording why each structural choice was made
+- [docs/experiments/](docs/experiments/README.md) — questions the code could not answer, and how they were settled
 - [AGENTS.md](AGENTS.md) — guidance for AI agents working in this repo
 
 ## Stack

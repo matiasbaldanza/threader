@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threader — which clipboard payload survives a paste into X?</title>
+<style>
+  :root { color-scheme: light dark; --fg: light-dark(#0f1419,#e7e9ea); --bg: light-dark(#fff,#15181c);
+          --muted: light-dark(#536471,#8b98a5); --line: light-dark(#e3e8ea,#2f3336);
+          --raised: light-dark(#f7f9fa,#1c2027); --ok: #1a7f37; --bad: #d92d20; --accent:#1d9bf0; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:2rem 1.25rem 5rem; background:var(--bg); color:var(--fg);
+         font:15px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+         max-width:56rem; margin-inline:auto; }
+  h1 { font-size:1.35rem; margin:0 0 .25rem; }
+  h2 { font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+       margin:2.5rem 0 .75rem; }
+  p { margin:0 0 .75rem; }
+  .lede { color:var(--muted); }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.85em;
+         background:var(--raised); padding:.05rem .3rem; border-radius:4px; }
+  ol.steps { padding-left:1.25rem; }
+  ol.steps li { margin-bottom:.35rem; }
+  table { border-collapse:collapse; width:100%; margin-top:.5rem; }
+  th, td { text-align:left; padding:.6rem .5rem; border-bottom:1px solid var(--line);
+           vertical-align:top; }
+  th { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  td.name { white-space:nowrap; font-weight:600; }
+  td.what { color:var(--muted); font-size:.875rem; }
+  button { font:inherit; font-size:.8125rem; padding:.25rem .7rem; border-radius:6px;
+           border:1px solid var(--line); background:var(--raised); color:var(--fg); cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  .status { font-size:.75rem; color:var(--muted); margin-left:.5rem; }
+  .status.ok { color:var(--ok); }
+  .status.bad { color:var(--bad); }
+  .panel { border:1px solid var(--line); border-radius:10px; padding:1rem; background:var(--raised); }
+  [contenteditable], textarea { width:100%; min-height:6rem; border:1px solid var(--line);
+           border-radius:8px; padding:.6rem .7rem; background:var(--bg); color:var(--fg);
+           font:inherit; white-space:pre-wrap; }
+  .note { font-size:.8125rem; color:var(--muted); }
+  .sample { background:var(--raised); border:1px solid var(--line); border-radius:8px;
+            padding:.6rem .7rem; white-space:pre-wrap; font-size:.875rem; }
+</style>
+</head>
+<body>
+
+<h1>Which clipboard payload survives a paste into X?</h1>
+<p class="lede">
+  X&rsquo;s web composer collapses pasted newlines into spaces. That breaks Threader&rsquo;s
+  copy step: the numbering separator is a blank line, so <code>1/12</code> lands inline,
+  and any paragraph inside a post arrives as one slab. This page writes the same text to
+  the clipboard eight different ways so you can find out which one, if any, X keeps.
+</p>
+
+<h2>Serving it</h2>
+<p>
+  Opening this from <code>file://</code> makes the async Clipboard API fail with
+  <em>&ldquo;Write permission denied&rdquo;</em> — the origin is opaque, so the browser
+  refuses. The page falls back to the older copy-event API, which needs no permission and
+  writes the same two flavours, so <strong>it should still work</strong>.
+</p>
+<p>
+  If a row still fails, serve it over localhost instead and reload:
+</p>
+<div class="sample">python3 -m http.server 8000 --directory docs/experiments</div>
+<p class="note">
+  Then open <code>http://localhost:8000/clipboard-line-breaks.html</code>. The status next
+  to each button says which route it took, so note that alongside the result — a variant
+  that only works via one route is worth knowing about.
+</p>
+
+<h2>How to run it</h2>
+<ol class="steps">
+  <li>Open this file in the browser you actually post from.</li>
+  <li>Click <strong>Copy</strong> on a row.</li>
+  <li>Paste into the <strong>local paste area</strong> at the bottom first — that shows what
+      the clipboard really holds, independent of X.</li>
+  <li>Then paste into X&rsquo;s composer (don&rsquo;t post it — just look).</li>
+  <li>Record whether the blank line survived. Then try the next row.</li>
+</ol>
+<p class="note">
+  The sample text is deliberately Threader-shaped: two paragraphs and a numbering suffix,
+  which is exactly the structure that breaks.
+</p>
+
+<div class="sample" id="sample"></div>
+
+<h2>Variants</h2>
+<table>
+  <thead>
+    <tr><th>Variant</th><th>What it puts on the clipboard</th><th></th><th>Survived?</th></tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<h2>Local paste area</h2>
+<p class="note">
+  Paste here before pasting into X. If the breaks survive here but not in X, the loss is in
+  X&rsquo;s paste handler and no clipboard format will fix it — which is the answer we most
+  need. <strong>contenteditable</strong> mimics X&rsquo;s composer; <strong>textarea</strong>
+  only ever sees <code>text/plain</code>.
+</p>
+<p class="note">contenteditable (rich, like X):</p>
+<div contenteditable="true" id="rich" aria-label="Rich paste target"></div>
+<p class="note" style="margin-top:.75rem">textarea (plain only):</p>
+<textarea id="plain" aria-label="Plain paste target"></textarea>
+
+<h2>What we learn</h2>
+<table>
+  <tbody>
+    <tr><td class="name">A works</td>
+        <td class="what">Nothing is wrong — the problem is elsewhere, or already fixed by X.</td></tr>
+    <tr><td class="name">B, C, D or G works</td>
+        <td class="what">Ship that HTML flavour in <code>apps/web/src/clipboard.ts</code>. Threader already
+            writes <code>text/html</code>; only <code>toHtml()</code> needs to change.</td></tr>
+    <tr><td class="name">E works but B–D don&rsquo;t</td>
+        <td class="what">X prefers <code>text/plain</code> when both are present, so we must omit it —
+            which breaks pasting anywhere else. Needs a per-target choice.</td></tr>
+    <tr><td class="name">F or H works</td>
+        <td class="what">It is a line-ending problem, not a format problem. Cheapest possible fix.</td></tr>
+    <tr><td class="name">Nothing works</td>
+        <td class="what">Unfixable from our side. Fall back to the plan: set the profile&rsquo;s numbering
+            separator to a space, and have the wizard flag posts containing newlines so the
+            retyping is guided rather than remembered.</td></tr>
+  </tbody>
+</table>
+
+<script>
+const SAMPLE = "The machine does the mechanical work.\n\nYou keep the judgment.\n\n3/12";
+document.getElementById('sample').textContent = SAMPLE;
+
+const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/**
+ * Fallback for file:// — the async Clipboard API needs a real origin and refuses with
+ * "Write permission denied" from a local file. The copy event carries the same two
+ * flavours and needs no permission, because it rides a genuine user copy.
+ */
+function legacyCopy(payload) {
+  return new Promise((resolve, reject) => {
+    function onCopy(e) {
+      document.removeEventListener('copy', onCopy, true);
+      if (payload.plain !== undefined) e.clipboardData.setData('text/plain', payload.plain);
+      if (payload.html !== undefined) e.clipboardData.setData('text/html', payload.html);
+      // Without this the browser overwrites our data with the selection.
+      e.preventDefault();
+      resolve('copy-event');
+    }
+    document.addEventListener('copy', onCopy, true);
+
+    // execCommand('copy') is a no-op without a selection, so give it a throwaway one.
+    const scratch = document.createElement('textarea');
+    scratch.value = payload.plain ?? ' ';
+    scratch.setAttribute('aria-hidden', 'true');
+    scratch.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(scratch);
+    scratch.select();
+
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (error) { ok = false; }
+    scratch.remove();
+
+    if (!ok) {
+      document.removeEventListener('copy', onCopy, true);
+      reject(new Error('execCommand("copy") refused'));
+    }
+  });
+}
+
+const VARIANTS = [
+  { id:'A', what:'text/plain only, with \\n\\n. What Threader did before Stage 7 — the baseline.',
+    write: () => ({ plain: SAMPLE }) },
+
+  { id:'B', what:'text/plain + text/html using <br><br>.',
+    write: () => ({ plain: SAMPLE, html: esc(SAMPLE).replace(/\n/g,'<br>') }) },
+
+  { id:'C', what:'text/plain + text/html using <div> blocks, empty line as <div><br></div>. What Threader ships today.',
+    write: () => ({ plain: SAMPLE,
+      html: SAMPLE.split('\n').map(l => `<div>${l === '' ? '<br>' : esc(l)}</div>`).join('') }) },
+
+  { id:'D', what:'text/plain + text/html using <p> paragraphs.',
+    write: () => ({ plain: SAMPLE,
+      html: SAMPLE.split('\n\n').map(p => `<p>${esc(p).replace(/\n/g,'<br>')}</p>`).join('') }) },
+
+  { id:'E', what:'text/html ONLY — no text/plain. Tests whether X prefers plain when both exist.',
+    write: () => ({ html: SAMPLE.split('\n').map(l => `<div>${l === '' ? '<br>' : esc(l)}</div>`).join('') }) },
+
+  { id:'F', what:'text/plain with Windows line endings (\\r\\n).',
+    write: () => ({ plain: SAMPLE.replace(/\n/g,'\r\n') }) },
+
+  { id:'G', what:'text/plain + text/html wrapped in white-space:pre-wrap.',
+    write: () => ({ plain: SAMPLE,
+      html: `<span style="white-space:pre-wrap">${esc(SAMPLE)}</span>` }) },
+
+  { id:'H', what:'text/plain using Unicode LINE SEPARATOR (U+2028) instead of \\n.',
+    write: () => ({ plain: SAMPLE.replace(/\n/g,'\u2028') }) },
+];
+
+const rows = document.getElementById('rows');
+
+for (const v of VARIANTS) {
+  const tr = document.createElement('tr');
+
+  const name = document.createElement('td');
+  name.className = 'name';
+  name.textContent = v.id;
+
+  const what = document.createElement('td');
+  what.className = 'what';
+  what.textContent = v.what;
+
+  const action = document.createElement('td');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = 'Copy';
+  const status = document.createElement('span');
+  status.className = 'status';
+
+  button.addEventListener('click', async () => {
+    const payload = v.write();
+    const flavours = payload.html === undefined
+      ? 'plain'
+      : payload.plain === undefined ? 'html only' : 'html + plain';
+
+    try {
+      if (payload.html !== undefined && window.ClipboardItem && navigator.clipboard?.write) {
+        const items = {};
+        if (payload.plain !== undefined) {
+          items['text/plain'] = new Blob([payload.plain], { type: 'text/plain' });
+        }
+        items['text/html'] = new Blob([payload.html], { type: 'text/html' });
+        await navigator.clipboard.write([new ClipboardItem(items)]);
+      } else if (payload.html === undefined && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload.plain ?? '');
+      } else {
+        throw new Error('no async clipboard');
+      }
+      status.textContent = `copied (${flavours})`;
+      status.className = 'status ok';
+    } catch (asyncError) {
+      try {
+        await legacyCopy(payload);
+        status.textContent = `copied (${flavours}, via copy event)`;
+        status.className = 'status ok';
+      } catch (legacyError) {
+        status.textContent = 'failed: ' + asyncError.message + ' / ' + legacyError.message;
+        status.className = 'status bad';
+      }
+    }
+  });
+
+  action.appendChild(button);
+  action.appendChild(status);
+
+  const result = document.createElement('td');
+  const label = document.createElement('label');
+  label.className = 'what';
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  label.appendChild(box);
+  label.appendChild(document.createTextNode(' kept the blank line'));
+  result.appendChild(label);
+
+  tr.append(name, what, action, result);
+  rows.appendChild(tr);
+}
+
+// Report what actually arrived, so "it looked right" is not the only evidence.
+const rich = document.getElementById('rich');
+rich.addEventListener('paste', () => {
+  setTimeout(() => {
+    console.log('rich paste innerHTML:', rich.innerHTML);
+  }, 0);
+});
+</script>
+
+</body>
+</html>

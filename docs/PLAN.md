@@ -276,76 +276,53 @@ marker is simply not rendered.
 
 > ADR-0002, ADR-0007
 
-Full-screen, one step at a time, keyboard-driven (`Enter` = next, `⌘C` = re-copy).
+One thing on screen at a time, moving sideways as you go — the thread is a sequence, so
+the wizard reads like one.
 
-**Per post `n`:**
+**Per step:**
 
-1. **Text** — rendered post with its numbering, shown exactly as it will appear.
-   Auto-copied to clipboard on entering the step; a "Copied ✓" state and a re-copy button.
-2. **Assets** — one card per asset, in order, each with:
-   - *Copy image* (`navigator.clipboard.write`, PNG/JPEG)
-   - *Reveal in Finder* (server shells `open -R`) — the fallback, and the only option for
-     video, which cannot be put on a browser clipboard
-   - Alt text shown for you to copy separately
-   - A checkbox per asset so you don't lose your place at 4 images
-3. **Confirm** — "Posted?" plus a URL field with a Paste button. Validation: must look like
-   `x.com/<handle>/status/<id>`, warns (does not block) if the handle doesn't match the
-   profile. The status ID is extracted and stored.
-4. Persist immediately, advance the cursor.
+1. **Copy** — the rendered post, numbering included, auto-copied on arrival. A button
+   opens `x.com/compose/post` for post 1, or the thread itself for the rest.
+2. **Post it yourself** — post 1 as a new post, everything after as a reply to the one
+   before. Threader never touches the network.
+3. **Next** — records that it went out, and when.
 
-**Post 1** additionally sets `publishRun.firstPostUrl`, which unlocks the closing post.
+**A URL is asked for exactly once**, and only when it is actually needed: post 1, when the
+closing post links back to it (`needsFirstPostUrl`). A thread that simply ends needs no
+URLs at all. Collecting one after every post would be a tab switch and a paste each time
+to gather data nothing reads — the opposite of what this tool is for.
 
-**Final step** — closing post with `{{url}}` now resolved, copy, capture its URL, done.
-Summary screen: thread marked published, every post URL listed, one-click copy of post 1's
-URL for sharing elsewhere.
+That single URL is what the closing post's `{{url}}` resolves to, which is why it is
+captured at the start of the run rather than the end.
 
-**Resumability** — `publishRun` is written to disk after every single step. Close the tab
-at post 7, reopen, the thread list shows "Publishing · 7/14" and resumes exactly there.
-You also get a permanent record of every post URL, which is genuinely useful later.
+**Final step** — the closing post, with the URL already substituted. Then a summary: when
+the thread went out, the link to post 1, and a button to open it.
 
-A "skip this post" and a "back" control both exist; going back does not un-publish
-anything, it just lets you re-copy something you fumbled.
+**What gets recorded.** Every step stores `{ at }`, and post 1 additionally stores
+`{ url }`. The run keeps `firstPostUrl` and `completedAt`, so a published thread knows it
+is published, when, and where to find it.
 
-### ⚠️ Known blocker to resolve before Stage 7: X eats line breaks on paste
+**Resumability** — the run is written to disk after every step (ADR-0007). Close the tab at
+post 7, reopen, resume at post 7. Going back is allowed and does not un-publish anything;
+Threader cannot delete a post and must not pretend otherwise.
 
-Observed in the X web composer (a regression from the 2024/25 redesign, still unfixed as of
-July 2026): **pasting text collapses newlines into spaces.** Line breaks have to be
-retyped by hand.
+### ✅ Resolved: X keeps pasted line breaks
 
-This is not a cosmetic problem for Threader — it defeats the copy step, which is the whole
-point of the wizard:
+Line breaks pasted into X's composer were reported as collapsing into spaces, which would
+have defeated the copy step: the numbering separator is a blank line, and any paragraph
+inside a post would have arrived as one slab — silently, since the paste looks right and
+you only find out after posting.
 
-- The numbering separator is `"\n\n"` by default, so `1/12` would land inline as
-  `…end of the post 1/12` instead of on its own line.
-- Every paragraph break *inside* a post is lost, so a two-paragraph post arrives as one
-  slab.
-- It fails silently. The paste looks like it worked, and you would only notice after
-  posting.
+Measured rather than argued about.
+[`docs/experiments/clipboard-line-breaks.html`](experiments/clipboard-line-breaks.html)
+writes the same sample to the clipboard eight ways — plain, several HTML flavours, HTML
+only, `\r\n`, U+2028 — so each can be pasted into X and checked.
 
-**Investigate before building the copy step**, roughly in order of promise:
-
-1. **Write `text/html` alongside `text/plain`.** `navigator.clipboard.write()` can carry
-   several flavours; the composer is a `contenteditable`, so it may honour an HTML flavour
-   with `<br>` or `<div>` where it flattens plain text. Most likely fix, and cheap to test.
-2. **Check whether the loss is on copy or on paste.** Paste the same text into a plain
-   textarea to confirm the newlines survive the clipboard — that tells us whether this is
-   ours to fix at all.
-3. **Try `\r\n` and ` `** as separators; some editors treat them differently.
-4. **Synthetic typing** into the composer — rejected in advance unless everything else
-   fails; it means driving X's DOM, which is fragile and against the spirit of ADR-0002.
-
-**If none of them work**, the fallbacks are all honest but worse, and the choice is the
-user's, not ours to make silently:
-
-- Make the numbering separator `" "` for X profiles, so numbering at least reads correctly
-  inline. `NumberingConfig.separator` already supports this — no code change, just a
-  default.
-- Have the wizard **warn on any post containing a newline** and show exactly where the
-  breaks need retyping, so the manual fix-up is guided rather than remembered.
-- Copy each paragraph as its own clipboard step, the way assets are handled.
-
-Worth re-testing on the day: X ships composer changes often, and this may simply be fixed
-by then.
+**Plain text with `\n\n` survives intact** (2026-07-29). Nothing exotic is needed, so the
+wizard writes `text/plain` and nothing else; an HTML flavour would only give the composer
+a second, untested path to prefer. The experiment and its reasoning are kept in
+[`docs/experiments/README.md`](experiments/README.md), including what to try first if this
+ever regresses.
 
 ---
 
@@ -419,14 +396,12 @@ each thread. *Commit: profiles.*
 their budget reservation, closing-post templates on the profile, per-thread selection, and
 placeholder rendering with its 23-char reservation. *Commit: thread endings.*
 
-**Stage 7 — The publish wizard.** `Publisher` interface, `ManualPublisher`, step machine,
+**Stage 7 — The publish wizard.** ✅ `Publisher` interface, `ManualPublisher`, step machine,
 clipboard, URL capture and validation, resumable `publishRun`, summary screen.
 **This is the payoff stage.** *Commit: publish wizard.*
 
-> **Start this stage by settling the line-break problem** (§6). X's composer collapses
-> pasted newlines into spaces, which breaks both the numbering separator and any paragraph
-> inside a post. Spike the `text/html` clipboard flavour before building the step machine —
-> the answer changes what the copy step has to do, and possibly the default separator.
+> **Settled before building** (§6): plain text survives the paste, so the copy step needed
+> nothing special. The spike lives in `docs/experiments/`.
 
 **Stage 8 — Assets.** Drag-drop onto post cards, upload endpoint, thumbnails, alt text,
 copy-image and reveal-in-Finder inside the wizard. *Commit: assets.*
