@@ -1,4 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+
+import { useFocusTrap } from './useFocusTrap.js'
 
 type Props = {
   onClose: () => void
@@ -10,6 +12,9 @@ type Props = {
  * exists — so the card explains them in the order you would actually hit them.
  */
 export function HelpCard({ onClose }: Props) {
+  const dialog = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialog)
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -21,6 +26,7 @@ export function HelpCard({ onClose }: Props) {
   return (
     <div className="scrim" onClick={onClose} role="presentation">
       <div
+        ref={dialog}
         className="help"
         role="dialog"
         aria-modal="true"

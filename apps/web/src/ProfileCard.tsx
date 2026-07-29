@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   applyNumbering,
   countX,
@@ -9,6 +9,7 @@ import {
   PLATFORMS,
 } from '@threader/core'
 import type { Platform, Profile } from '@threader/core'
+import { useFocusTrap } from './useFocusTrap.js'
 
 type Props = {
   profiles: Profile[]
@@ -36,6 +37,9 @@ export function ProfileCard({
   onDelete,
   onClose,
 }: Props) {
+  const dialog = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialog)
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -83,6 +87,7 @@ export function ProfileCard({
   return (
     <div className="scrim scrim--right" onClick={onClose} role="presentation">
       <div
+        ref={dialog}
         className="help profile drawer"
         role="dialog"
         aria-modal="true"

@@ -11,6 +11,7 @@ import {
   isPublishing,
   publishBlockedReason,
   recordPublished,
+  resetPublish,
   resplitFromSource,
   setClosing,
   setClosingText,
@@ -27,6 +28,7 @@ import { ArrangeView } from './arrange/ArrangeView.js'
 import { HelpCard } from './HelpCard.js'
 import { ProfileCard } from './ProfileCard.js'
 import { ProfileChip } from './ProfileChip.js'
+import { PublishButton } from './PublishButton.js'
 import { PublishWizard } from './PublishWizard.js'
 import { ThreadList } from './ThreadList.js'
 import { HttpStore } from './storage/httpStore.js'
@@ -369,18 +371,15 @@ export function App() {
           <button type="button" className="ghost" onClick={newThread} title="New thread">
             New
           </button>
-          <button
-            type="button"
-            className="ghost primary"
+          <PublishButton
+            thread={thread}
+            disabled={blockedReason !== null}
+            title={blockedReason ?? 'Publish this thread, one post at a time'}
             onClick={() => {
               if (!isPublishing(thread)) apply((t) => startPublish(t))
               setWizardOpen(true)
             }}
-            disabled={blockedReason !== null}
-            title={blockedReason ?? 'Publish this thread, one post at a time'}
-          >
-            {isPublishing(thread) ? 'Resume' : 'Publish'}
-          </button>
+          />
           <button
             type="button"
             className="ghost"
@@ -463,6 +462,9 @@ export function App() {
           profile={profile}
           onRecord={(url) => apply((t) => recordPublished(t, url))}
           onBack={() => apply((t) => stepBack(t))}
+          onReset={() => {
+            apply((t) => startPublish(resetPublish(t)))
+          }}
           onClose={() => setWizardOpen(false)}
         />
       )}
