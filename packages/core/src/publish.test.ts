@@ -8,7 +8,10 @@ import {
   isPublishing,
   parseStatusUrl,
   publishBlockedReason,
+  publishProgress,
+  publishState,
   recordPublished,
+  resetPublish,
   skipStep,
   startPublish,
   stepBack,
@@ -195,5 +198,50 @@ describe('numbering is unaffected by publishing', () => {
     thread = recordPublished(thread, 'https://x.com/me/status/1', clock)
     expect(thread.posts.map((p) => p.text)).toEqual(['a', 'b'])
     expect(defaultNumbering.format).toBe('{n}/{total}')
+  })
+})
+
+describe('resetPublish', () => {
+  it('forgets the run and what went out, so it can be published again', () => {
+    let thread = startPublish(threadWith(['a', 'b']), clock)
+    thread = recordPublished(thread, 'https://x.com/me/status/1', clock)
+    thread = resetPublish(thread, clock)
+
+    expect(thread.publishRun).toBeNull()
+    expect(thread.posts.every((p) => p.published === null)).toBe(true)
+    expect(currentStep(thread)).toEqual({ kind: 'done' })
+    expect(isPublishing(startPublish(thread, clock))).toBe(true)
+  })
+
+  it('differs from abandoning, which keeps the record', () => {
+    let thread = startPublish(threadWith(['a', 'b']), clock)
+    thread = recordPublished(thread, 'https://x.com/me/status/1', clock)
+
+    expect(abandonPublish(thread, clock).posts[0]?.published).not.toBeNull()
+    expect(resetPublish(thread, clock).posts[0]?.published).toBeNull()
+  })
+})
+
+describe('publishState and progress', () => {
+  it('is unpublished before a run starts', () => {
+    const thread = threadWith(['a', 'b'])
+    expect(publishState(thread)).toBe('unpublished')
+    expect(publishProgress(thread)).toBe(0)
+  })
+
+  it('is part-way through during a run', () => {
+    let thread = startPublish(threadWith(['a', 'b']), clock)
+    thread = recordPublished(thread, undefined, clock)
+
+    expect(publishState(thread)).toBe('publishing')
+    expect(publishProgress(thread)).toBe(0.5)
+  })
+
+  it('is full once finished', () => {
+    let thread = startPublish(threadWith(['a']), clock)
+    thread = recordPublished(thread, undefined, clock)
+
+    expect(publishState(thread)).toBe('published')
+    expect(publishProgress(thread)).toBe(1)
   })
 })

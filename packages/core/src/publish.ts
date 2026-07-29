@@ -166,6 +166,43 @@ export function abandonPublish(thread: Thread, clock: Clock = defaultClock): Thr
   return { ...thread, publishRun: null, updatedAt: clock() }
 }
 
+/**
+ * Forgets the run *and* the record of what went out, so the thread can be published
+ * again from the top.
+ *
+ * Distinct from `abandonPublish`, which only drops the run and leaves the record
+ * intact. This one is for "I deleted those posts on X, let me start again" — and it
+ * cannot be inferred, because Threader has no way to know whether the posts are still
+ * up. Whatever is already public stays public; this only changes what Threader
+ * remembers, which is why the UI has to say so plainly.
+ */
+export function resetPublish(thread: Thread, clock: Clock = defaultClock): Thread {
+  return {
+    ...thread,
+    posts: thread.posts.map((post) => ({ ...post, published: null })),
+    closing: thread.closing ? { ...thread.closing, published: null } : null,
+    publishRun: null,
+    updatedAt: clock(),
+  }
+}
+
+/** How far through a run the thread is, 0 to 1. Drives the progress ring. */
+export function publishProgress(thread: Thread): number {
+  const steps = stepCount(thread)
+  if (steps === 0) return 0
+  if (thread.publishRun?.completedAt) return 1
+  const cursor = thread.publishRun?.cursor ?? 0
+  return Math.min(cursor / steps, 1)
+}
+
+/** Not started, part-way through, or finished — what the ring colours itself by. */
+export type PublishState = 'unpublished' | 'publishing' | 'published'
+
+export function publishState(thread: Thread): PublishState {
+  if (!thread.publishRun) return 'unpublished'
+  return thread.publishRun.completedAt ? 'published' : 'publishing'
+}
+
 const STATUS_URL =
   /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/([A-Za-z0-9_]{1,15})\/status(?:es)?\/(\d+)/
 
