@@ -5,3 +5,6 @@ dist/
 .env
 .env.local
 coverage/
+
+# Exported session transcripts — large, machine-specific, kept locally only.
+docs/sessions/
